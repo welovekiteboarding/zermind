@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "yarn generate:db && next dev",
+    "build": "yarn generate:db && next build",
+    "start": "yarn prisma:migrate && next start",
+    "lint": "next lint",
+    "generate:db": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "prisma db seed",
+    "prisma:studio": "prisma studio"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
