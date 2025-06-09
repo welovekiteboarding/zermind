@@ -24,7 +24,7 @@ export default async function ProtectedPage() {
             <SidebarTrigger className="mb-4" />
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <h1 className="text-2xl font-semibold mb-2">
+                <h1 className="text-2xl font-semibold mb-8">
                   Welcome to Zermind
                 </h1>
                 <p className="text-muted-foreground">
