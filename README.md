@@ -13,8 +13,9 @@ It supports multiple language models, user authentication, chat history sync, an
 | UI           | Tailwind CSS + shadcn/ui  |
 | Auth         | Supabase Auth             |
 | DB           | Supabase Postgres         |
-| ORM          | Prisma      |
+| ORM          | Prisma                    |
 | LLM API      | Vercel AI SDK             |
+| BYOK         | Open Router               |
 | Optional     | Redis (resumable streams) |
 
 ---
