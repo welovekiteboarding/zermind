@@ -1,4 +1,3 @@
-@ -1,45 +1,36 @@
 # 🧠 Zermind – Open Source Multi-LLM Chat App
 
 Zermind is a modern, open-source AI chat app built for the Cloneathon hackathon.  
