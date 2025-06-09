@@ -42,6 +42,7 @@ Zermind is built for the [Cloneathon 2025](https://cloneathon.t3.chat) and follo
 - **Resumable Streams** - Continue generation after page refresh
 - **Chat Sharing** - Share conversations with others
 - **Bring Your Own Key** - Use your own API keys
+- **Attachment Support** - Allow users to upload files (images and pdfs)
 - **Anything Else** - Get creative - we love unique ideas
 
 ---
