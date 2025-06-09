@@ -10,7 +10,7 @@ import {
   Trash2,
   MoreHorizontal,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeSwitcher } from "./theme-switcher";
-import { GetUserChatsResponseSchema, type ChatListItem } from "@/lib/schemas/chat";
+import { useUserChats, useCreateChat, useDeleteChat } from "@/hooks/use-chats-query";
 
 const navigationItems = [
   {
@@ -51,30 +51,17 @@ const navigationItems = [
 
 export function AppSidebar() {
   const router = useRouter();
-  const [chatSessions, setChatSessions] = useState<ChatListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Function to fetch chats from API
-  const fetchChats = async () => {
-    try {
-              const response = await fetch("/api/chats/user");
-        if (response.ok) {
-          const data = await response.json();
-          // Validate and parse the response using Zod
-          const validatedData = GetUserChatsResponseSchema.parse(data);
-          setChatSessions(validatedData.chats);
-      } else {
-        console.error("Failed to fetch chats");
-      }
-    } catch (error) {
-      console.error("Error fetching chats:", error);
-    }
-  };
+  // React Query hooks
+  const { data: chatSessions = [], isLoading } = useUserChats(userId || undefined);
+  const createChatMutation = useCreateChat();
+  const deleteChatMutation = useDeleteChat();
 
-  // Get user and load chats
+  // Get user ID
   useEffect(() => {
-    const initializeData = async () => {
+    const getUser = async () => {
       try {
         const supabase = createClient();
         const {
@@ -83,16 +70,13 @@ export function AppSidebar() {
 
         if (user) {
           setUserId(user.id);
-          await fetchChats();
         }
       } catch (error) {
-        console.error("Error loading chats:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Error getting user:", error);
       }
     };
 
-    initializeData();
+    getUser();
   }, []);
 
   const logout = async () => {
@@ -109,37 +93,12 @@ export function AppSidebar() {
     if (!userId) return;
 
     try {
-      const response = await fetch("/api/chats", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ title: "New Chat" }),
+      const newChat = await createChatMutation.mutateAsync({ 
+        title: "New Chat" 
       });
 
-      if (response.ok) {
-        const newChat = await response.json();
-
-        // Update local state
-        setChatSessions((prev) => [
-          {
-            id: newChat.id,
-            title: newChat.title,
-            userId: newChat.userId,
-            createdAt: new Date(newChat.createdAt),
-            updatedAt: new Date(newChat.updatedAt),
-            shareId: newChat.shareId,
-            _count: { messages: 0 },
-            messages: [],
-          },
-          ...prev,
-        ]);
-
-        // Navigate to the new chat
-        router.push(`/protected/chat/${newChat.id}`);
-      } else {
-        console.error("Failed to create chat");
-      }
+      // Navigate to the new chat
+      router.push(`/protected/chat/${newChat.id}`);
     } catch (error) {
       console.error("Error creating new chat:", error);
     }
@@ -149,14 +108,12 @@ export function AppSidebar() {
     if (!userId) return;
 
     try {
-      const response = await fetch(`/api/chats/${chatId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setChatSessions((prev) => prev.filter((chat) => chat.id !== chatId));
-      } else {
-        console.error("Failed to delete chat");
+      await deleteChatMutation.mutateAsync(chatId);
+      
+      // Check if we're currently viewing the deleted chat
+      if (pathname === `/protected/chat/${chatId}`) {
+        // Navigate to home page when the current chat is deleted
+        router.push("/protected");
       }
     } catch (error) {
       console.error("Error deleting chat:", error);
@@ -175,7 +132,7 @@ export function AppSidebar() {
     return date.toLocaleDateString();
   };
 
-  const getChatDisplayInfo = (chat: ChatListItem) => {
+  const getChatDisplayInfo = (chat: typeof chatSessions[0]) => {
     const title = chat.title || "New Chat";
     const lastMessage = chat.messages[0]?.content || "No messages yet";
     const truncatedMessage =
@@ -194,7 +151,7 @@ export function AppSidebar() {
             onClick={createNewChat}
             className="w-full justify-start gap-2"
             size="sm"
-            disabled={!userId}
+            disabled={!userId || createChatMutation.isPending}
           >
             <MessageSquarePlus className="h-4 w-4" />
             New Chat
@@ -273,6 +230,7 @@ export function AppSidebar() {
                           <DropdownMenuItem
                             onClick={() => deleteChatHandler(chat.id)}
                             className="text-destructive focus:text-destructive"
+                            disabled={deleteChatMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Chat
