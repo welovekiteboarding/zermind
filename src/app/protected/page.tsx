@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { LogoutButton } from "@/components/auth/logout-button";
-import { AppHeader } from "@/components/app-header";
+import { AppSidebar } from "@/components/app-sidebar";
 import { createClient } from "@/lib/supabase/server";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
@@ -13,17 +13,31 @@ export default async function ProtectedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 relative">
-      {/* App Header with Logo, Auth, and Theme */}
-      <AppHeader showUserStatus={false} />
-      
-      {/* Main Content */}
-      <div className="flex h-svh w-full items-center justify-center gap-2">
-        <p>
-          Hello <span className="font-semibold">{data.user.email}</span>
-        </p>
-        <LogoutButton />
+    <SidebarProvider>
+      <div className="flex h-screen w-full bg-gradient-to-br from-background via-background to-muted/30">
+        {/* Sidebar */}
+        <AppSidebar />
+        
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 p-4">
+            <SidebarTrigger className="mb-4" />
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-2xl font-semibold mb-2">
+                  Welcome to Zermind
+                </h1>
+                <p className="text-muted-foreground">
+                  Hello <span className="font-semibold">{data.user.email}</span>
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Create a new chat to get started or select an existing one from the sidebar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
