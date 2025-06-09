@@ -1,6 +1,6 @@
 # 🧠 Zermind – Open Source Multi-LLM Chat App
 
-Zermind is a modern, open-source AI chat app built for the Cloneathon hackathon.  
+Zermind is a modern, open-source AI chat app built for the [Cloneathon 2025](https://cloneathon.t3.chat) hackathon.  
 It supports multiple language models, user authentication, chat history sync, and bonus features like resumable streams and shareable chat links.
 
 ---
@@ -55,4 +55,4 @@ bun dev
 
 ## License
 MIT – use it freely, contribute back if you like.
-Zermind was built with ❤️ for the Cloneathon challenge.
+Zermind was built with ❤️ for the [Cloneathon 2025](https://cloneathon.t3.chat) challenge.
