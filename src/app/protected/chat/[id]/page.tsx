@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ChatConversation } from "@/components/chat-conversation";
+import { ChatHeader } from "@/components/chat-header";
 import { getChatWithMessages } from "@/lib/db/chats";
 
 interface ChatPageProps {
@@ -29,13 +30,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat Header */}
-      <div className="border-b p-4 bg-background/50 backdrop-blur">
-        <h1 className="text-lg font-semibold truncate">{chatData.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          Last updated: {chatData.updatedAt.toLocaleDateString()}
-        </p>
-      </div>
+      {/* Dynamic Chat Header */}
+      <ChatHeader
+        chatId={id}
+        userId={userData.user.id}
+        initialTitle={chatData.title}
+        initialUpdatedAt={chatData.updatedAt}
+      />
 
       {/* Chat Interface */}
       <div className="flex-1 overflow-hidden">
