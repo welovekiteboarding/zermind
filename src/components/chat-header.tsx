@@ -9,6 +9,15 @@ interface ChatHeaderProps {
   initialUpdatedAt?: Date;
 }
 
+// Helper function to format date consistently across server and client
+const formatDate = (date: Date): string => {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
 export function ChatHeader({ 
   chatId, 
   userId, 
@@ -26,7 +35,7 @@ export function ChatHeader({
     <div className="border-b p-4 bg-background/50 backdrop-blur">
       <h1 className="text-lg font-semibold truncate">{title}</h1>
       <p className="text-sm text-muted-foreground">
-        Last updated: {updatedAt.toLocaleDateString()}
+        Last updated: {formatDate(updatedAt)}
       </p>
     </div>
   );

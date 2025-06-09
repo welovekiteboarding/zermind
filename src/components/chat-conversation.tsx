@@ -75,6 +75,11 @@ export function ChatConversation({
     },
   });
 
+  // Sort messages chronologically (oldest first) to ensure correct display order
+  const sortedMessages = [...messages].sort((a, b) => 
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -141,9 +146,10 @@ export function ChatConversation({
   };
 
   const formatTime = (createdAt: Date) => {
-    return createdAt.toLocaleTimeString([], {
+    return createdAt.toLocaleTimeString('en-US', {
       hour: "2-digit",
       minute: "2-digit",
+      hour12: false,
     });
   };
 
@@ -183,7 +189,7 @@ export function ChatConversation({
           </div>
         ) : (
           <>
-            {messages.map((message) => (
+            {sortedMessages.map((message) => (
               <div
                 key={message.id}
                 className={cn(

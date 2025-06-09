@@ -57,7 +57,11 @@ export default async function SettingsPage() {
               </label>
               <p className="text-sm bg-muted px-3 py-2 rounded-md">
                 {data?.user?.created_at
-                  ? new Date(data.user.created_at).toLocaleDateString()
+                  ? new Date(data.user.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
                   : "Unknown"}
               </p>
             </div>
