@@ -59,16 +59,20 @@ export function ChatConversation({
     initialMessages,
     model: selectedModel,
     onFinish: (message) => {
-      // Save assistant message to database
-      saveMessageMutation.mutate({
-        chatId,
-        message: {
-          role: message.role,
-          content: message.content,
-          model: message.model,
-        }
-      });
-      console.log("Message finished:", message);
+      try {
+        // Save assistant message to database
+        saveMessageMutation.mutate({
+          chatId,
+          message: {
+            role: message.role,
+            content: message.content,
+            model: message.model,
+          }
+        });
+        console.log("Message finished:", message);
+      } catch (error) {
+        console.error("Failed to save assistant message:", error);
+      }
     },
     onError: (error) => {
       console.error("Chat error:", error);
@@ -104,18 +108,29 @@ export function ChatConversation({
       
       const shouldUpdateTitle = isFirstMessage && shouldUpdateChatTitle(chatTitle || null);
       
-      // Send the message
-      await sendMessage(userMessage);
-      
-      // Save user message to database
-      await saveMessageMutation.mutateAsync({
-        chatId,
-        message: {
-          role: 'user',
-          content: userMessage,
-          model: null, // User messages don't have a model
-        }
-      });
+      // Save user message to database FIRST with current timestamp
+      // This ensures proper chronological ordering
+      try {
+        await saveMessageMutation.mutateAsync({
+          chatId,
+          message: {
+            role: 'user',
+            content: userMessage,
+            model: null, // User messages don't have a model
+          }
+        });
+      } catch (error) {
+        console.error("Failed to save user message:", error);
+        throw new Error("Failed to save your message. Please try again.");
+      }
+
+      // Then send the message to AI
+      try {
+        await sendMessage(userMessage);
+      } catch (error) {
+        console.error("Failed to send message to AI:", error);
+        throw new Error("Failed to get AI response. Please try again.");
+      }
 
       // Update chat title if this is the first user message
       if (shouldUpdateTitle) {
@@ -131,7 +146,8 @@ export function ChatConversation({
         }
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error in handleSendMessage:", error);
+      // The error will be displayed in the UI through the error state
     }
   };
 
@@ -146,11 +162,16 @@ export function ChatConversation({
   };
 
   const formatTime = (createdAt: Date) => {
-    return createdAt.toLocaleTimeString('en-US', {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    try {
+      return createdAt.toLocaleTimeString('en-US', {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    } catch (error) {
+      console.error("Failed to format time:", error);
+      return "Invalid time";
+    }
   };
 
   return (
