@@ -5,34 +5,61 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Send, 
-  Bot, 
-  User, 
-  Copy, 
+import {
+  Send,
+  Bot,
+  User,
+  Copy,
   Check,
-  MessageSquare 
+  MessageSquare,
+  StopCircle,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type Message } from "@/lib/schemas/chat";
+import { useChat } from "@/hooks/use-chat";
+import { ModelSelector } from "@/components/model-selector";
 
 interface ChatConversationProps {
   chatId: string;
   initialMessages: Message[];
   userId: string;
   chatTitle?: string;
+  model?: string;
 }
 
-export function ChatConversation({ 
-  initialMessages, 
+export function ChatConversation({
+  chatId,
+  initialMessages,
+  userId, // eslint-disable-line @typescript-eslint/no-unused-vars
+  chatTitle, // eslint-disable-line @typescript-eslint/no-unused-vars
+  model: initialModel = "openai/gpt-4o-mini",
 }: ChatConversationProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  
-  // Note: chatId, userId, and chatTitle will be used for API calls and database operations
-  const [newMessage, setNewMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState(initialModel);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    error,
+    stop,
+    sendMessage,
+  } = useChat({
+    chatId,
+    initialMessages,
+    model: selectedModel,
+    onFinish: (message) => {
+      // TODO: Save message to database
+      console.log("Message finished:", message);
+    },
+    onError: (error) => {
+      console.error("Chat error:", error);
+    },
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,40 +69,18 @@ export function ChatConversation({
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || isLoading) return;
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
 
-    const userMessage: Message = {
-      id: `msg-${Date.now()}`,
-      content: newMessage.trim(),
-      role: "user",
-      createdAt: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setNewMessage("");
-    setIsLoading(true);
+    if (!input.trim() || isLoading) return;
 
     try {
-      // TODO: Replace with actual AI API call
-      // Simulate AI response
-      setTimeout(() => {
-        const aiMessage: Message = {
-          id: `msg-${Date.now()}-ai`,
-          content: `This is a mock response to: "${userMessage.content}". In a real implementation, this would be replaced with an actual AI API call.`,
-          role: "assistant",
-          createdAt: new Date(),
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
-        setIsLoading(false);
-      }, 1000);
-
-      // TODO: Save messages to database
-      
+      await sendMessage(input.trim());
+      // TODO: Save user message to database
     } catch (error) {
       console.error("Error sending message:", error);
-      setIsLoading(false);
     }
   };
 
@@ -90,9 +95,9 @@ export function ChatConversation({
   };
 
   const formatTime = (createdAt: Date) => {
-    return createdAt.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return createdAt.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -100,6 +105,23 @@ export function ChatConversation({
     <div className="flex flex-col h-full">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Error Display */}
+        {error && (
+          <div className="flex items-center justify-center mb-4">
+            <Card className="border-destructive bg-destructive/10 max-w-md">
+              <CardContent className="p-3">
+                <div className="flex items-center space-x-2 text-destructive">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium">Error occurred</p>
+                    <p className="text-xs mt-1">{error.message}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
             <MessageSquare className="h-12 w-12 text-muted-foreground" />
@@ -107,6 +129,9 @@ export function ChatConversation({
               <h3 className="text-lg font-medium">Start the conversation</h3>
               <p className="text-sm text-muted-foreground">
                 Send a message to begin chatting with AI
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Using: {selectedModel}
               </p>
             </div>
           </div>
@@ -120,12 +145,14 @@ export function ChatConversation({
                   message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
-                <Card className={cn(
-                  "max-w-[80%] md:max-w-[70%]",
-                  message.role === "user" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted"
-                )}>
+                <Card
+                  className={cn(
+                    "max-w-[80%] md:max-w-[70%]",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  )}
+                >
                   <CardContent className="p-3">
                     <div className="flex items-start space-x-2">
                       <div className="flex-shrink-0 mt-0.5">
@@ -140,12 +167,12 @@ export function ChatConversation({
                           {message.content}
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={cn(
                               "text-xs",
-                              message.role === "user" 
-                                ? "border-primary-foreground/20 text-primary-foreground/70" 
+                              message.role === "user"
+                                ? "border-primary-foreground/20 text-primary-foreground/70"
                                 : "border-muted-foreground/20 text-muted-foreground"
                             )}
                           >
@@ -156,7 +183,9 @@ export function ChatConversation({
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0 hover:bg-background/20"
-                              onClick={() => copyToClipboard(message.content, message.id)}
+                              onClick={() =>
+                                copyToClipboard(message.content, message.id)
+                              }
                             >
                               {copiedMessageId === message.id ? (
                                 <Check className="h-3 w-3" />
@@ -172,7 +201,7 @@ export function ChatConversation({
                 </Card>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <Card className="bg-muted max-w-[80%] md:max-w-[70%]">
@@ -195,12 +224,23 @@ export function ChatConversation({
       </div>
 
       {/* Message Input */}
-      <div className="border-t p-4 bg-background/50 backdrop-blur">
-        <div className="flex space-x-2">
+      <div className="border-t p-4 bg-background/50 backdrop-blur space-y-3">
+        {/* Model Selector */}
+        <div className="flex justify-start">
+          <ModelSelector
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+            disabled={isLoading}
+            className="w-full max-w-xs"
+          />
+        </div>
+        
+        {/* Input Form */}
+        <form onSubmit={handleSubmit} className="flex space-x-2">
           <Input
             placeholder="Type your message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            value={input}
+            onChange={handleInputChange}
             disabled={isLoading}
             className="flex-1"
             onKeyDown={(e) => {
@@ -210,19 +250,31 @@ export function ChatConversation({
               }
             }}
           />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim() || isLoading}
-            size="icon"
-            className="flex-shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2 text-center">
+          {isLoading ? (
+            <Button
+              type="button"
+              onClick={stop}
+              size="icon"
+              variant="destructive"
+              className="flex-shrink-0"
+            >
+              <StopCircle className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              disabled={!input.trim()}
+              size="icon"
+              className="flex-shrink-0"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+        </form>
+        <p className="text-xs text-muted-foreground text-center">
           Press Enter to send, Shift + Enter for new line
         </p>
       </div>
     </div>
   );
-} 
+}
