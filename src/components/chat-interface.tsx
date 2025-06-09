@@ -46,9 +46,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center space-x-2">
-          <div className="relative">
-            <Sparkles className="h-12 w-12 text-primary/60" />
-          </div>
+
           <h1 className="text-4xl font-bold bg-primary bg-clip-text text-transparent">
             Zermind
           </h1>
@@ -67,7 +65,6 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
         <CardHeader className="text-center pb-4">
           <CardTitle className="flex items-center justify-center space-x-2">
-            <MessageCircle className="h-5 w-5 text-primary" />
             <span>Start Chatting</span>
           </CardTitle>
           <CardDescription>
