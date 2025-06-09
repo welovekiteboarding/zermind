@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Home,
   MessageSquarePlus,
@@ -34,28 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeSwitcher } from "./theme-switcher";
-
-// Mock chat sessions data - replace with real data fetching
-const mockChatSessions = [
-  {
-    id: "1",
-    title: "Discussion about AI ethics",
-    lastMessage: "What are the implications...",
-    updatedAt: new Date("2024-01-15"),
-  },
-  {
-    id: "2",
-    title: "Machine Learning Tutorial",
-    lastMessage: "Can you explain neural networks...",
-    updatedAt: new Date("2024-01-14"),
-  },
-  {
-    id: "3",
-    title: "Code Review Session",
-    lastMessage: "Please review this React component...",
-    updatedAt: new Date("2024-01-13"),
-  },
-];
+import { GetUserChatsResponseSchema, type ChatListItem } from "@/lib/schemas/chat";
 
 const navigationItems = [
   {
@@ -72,7 +51,49 @@ const navigationItems = [
 
 export function AppSidebar() {
   const router = useRouter();
-  const [chatSessions, setChatSessions] = useState(mockChatSessions);
+  const [chatSessions, setChatSessions] = useState<ChatListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Function to fetch chats from API
+  const fetchChats = async () => {
+    try {
+              const response = await fetch("/api/chats/user");
+        if (response.ok) {
+          const data = await response.json();
+          // Validate and parse the response using Zod
+          const validatedData = GetUserChatsResponseSchema.parse(data);
+          setChatSessions(validatedData.chats);
+      } else {
+        console.error("Failed to fetch chats");
+      }
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+    }
+  };
+
+  // Get user and load chats
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          setUserId(user.id);
+          await fetchChats();
+        }
+      } catch (error) {
+        console.error("Error loading chats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeData();
+  }, []);
 
   const logout = async () => {
     try {
@@ -85,26 +106,58 @@ export function AppSidebar() {
   };
 
   const createNewChat = async () => {
+    if (!userId) return;
+
     try {
-      // TODO: Implement actual chat creation logic
-      const newChat = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        lastMessage: "",
-        updatedAt: new Date(),
-      };
-      setChatSessions([newChat, ...chatSessions]);
-      // Navigate to the new chat
-      router.push(`/protected/chat/${newChat.id}`);
+      const response = await fetch("/api/chats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: "New Chat" }),
+      });
+
+      if (response.ok) {
+        const newChat = await response.json();
+
+        // Update local state
+        setChatSessions((prev) => [
+          {
+            id: newChat.id,
+            title: newChat.title,
+            userId: newChat.userId,
+            createdAt: new Date(newChat.createdAt),
+            updatedAt: new Date(newChat.updatedAt),
+            shareId: newChat.shareId,
+            _count: { messages: 0 },
+            messages: [],
+          },
+          ...prev,
+        ]);
+
+        // Navigate to the new chat
+        router.push(`/protected/chat/${newChat.id}`);
+      } else {
+        console.error("Failed to create chat");
+      }
     } catch (error) {
       console.error("Error creating new chat:", error);
     }
   };
 
-  const deleteChat = async (chatId: string) => {
+  const deleteChatHandler = async (chatId: string) => {
+    if (!userId) return;
+
     try {
-      // TODO: Implement actual chat deletion logic
-      setChatSessions(chatSessions.filter((chat) => chat.id !== chatId));
+      const response = await fetch(`/api/chats/${chatId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setChatSessions((prev) => prev.filter((chat) => chat.id !== chatId));
+      } else {
+        console.error("Failed to delete chat");
+      }
     } catch (error) {
       console.error("Error deleting chat:", error);
     }
@@ -122,6 +175,17 @@ export function AppSidebar() {
     return date.toLocaleDateString();
   };
 
+  const getChatDisplayInfo = (chat: ChatListItem) => {
+    const title = chat.title || "New Chat";
+    const lastMessage = chat.messages[0]?.content || "No messages yet";
+    const truncatedMessage =
+      lastMessage.length > 50
+        ? lastMessage.substring(0, 50) + "..."
+        : lastMessage;
+
+    return { title, lastMessage: truncatedMessage };
+  };
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="border-b">
@@ -130,6 +194,7 @@ export function AppSidebar() {
             onClick={createNewChat}
             className="w-full justify-start gap-2"
             size="sm"
+            disabled={!userId}
           >
             <MessageSquarePlus className="h-4 w-4" />
             New Chat
@@ -162,40 +227,62 @@ export function AppSidebar() {
           <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {chatSessions.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton asChild>
-                    <a
-                      href={`/protected/chat/${chat.id}`}
-                      className="flex-1 m-2"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      <div className="flex-1 overflow-hidden">
-                        <div className="truncate font-medium">{chat.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDate(chat.updatedAt)}
-                        </div>
+              {isLoading ? (
+                // Loading skeleton
+                Array.from({ length: 3 }).map((_, index) => (
+                  <SidebarMenuItem key={`skeleton-${index}`}>
+                    <div className="flex items-center space-x-2 p-2">
+                      <div className="w-4 h-4 bg-muted animate-pulse rounded"></div>
+                      <div className="flex-1 space-y-1">
+                        <div className="w-3/4 h-3 bg-muted animate-pulse rounded"></div>
+                        <div className="w-1/2 h-2 bg-muted animate-pulse rounded"></div>
                       </div>
-                    </a>
-                  </SidebarMenuButton>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <SidebarMenuAction>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </SidebarMenuAction>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent side="right" align="start">
-                      <DropdownMenuItem
-                        onClick={() => deleteChat(chat.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Chat
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </SidebarMenuItem>
-              ))}
+                    </div>
+                  </SidebarMenuItem>
+                ))
+              ) : chatSessions.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No chats yet. Create your first chat!
+                </div>
+              ) : (
+                chatSessions.map((chat) => {
+                  const { title } = getChatDisplayInfo(chat);
+                  return (
+                    <SidebarMenuItem key={chat.id}>
+                      <SidebarMenuButton asChild>
+                        <a
+                          href={`/protected/chat/${chat.id}`}
+                          className="flex-1 m-2"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          <div className="flex-1 overflow-hidden">
+                            <div className="truncate font-medium">{title}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatDate(chat.updatedAt)}
+                            </div>
+                          </div>
+                        </a>
+                      </SidebarMenuButton>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <SidebarMenuAction>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </SidebarMenuAction>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start">
+                          <DropdownMenuItem
+                            onClick={() => deleteChatHandler(chat.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Chat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </SidebarMenuItem>
+                  );
+                })
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -204,7 +291,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
-              <ThemeSwitcher />
+            <ThemeSwitcher />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={logout} className="w-full">
