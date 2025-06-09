@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  Home, 
+import {
+  Home,
   MessageSquarePlus,
   MessageSquare,
   LogOut,
   Settings,
   Trash2,
-  MoreHorizontal
+  MoreHorizontal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeSwitcher } from "./theme-switcher";
 
 // Mock chat sessions data - replace with real data fetching
 const mockChatSessions = [
@@ -43,7 +44,7 @@ const mockChatSessions = [
     updatedAt: new Date("2024-01-15"),
   },
   {
-    id: "2", 
+    id: "2",
     title: "Machine Learning Tutorial",
     lastMessage: "Can you explain neural networks...",
     updatedAt: new Date("2024-01-14"),
@@ -103,7 +104,7 @@ export function AppSidebar() {
   const deleteChat = async (chatId: string) => {
     try {
       // TODO: Implement actual chat deletion logic
-      setChatSessions(chatSessions.filter(chat => chat.id !== chatId));
+      setChatSessions(chatSessions.filter((chat) => chat.id !== chatId));
     } catch (error) {
       console.error("Error deleting chat:", error);
     }
@@ -111,8 +112,10 @@ export function AppSidebar() {
 
   const formatDate = (date: Date) => {
     const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const diffDays = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -123,7 +126,7 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="border-b">
         <div className="p-4">
-          <Button 
+          <Button
             onClick={createNewChat}
             className="w-full justify-start gap-2"
             size="sm"
@@ -162,7 +165,10 @@ export function AppSidebar() {
               {chatSessions.map((chat) => (
                 <SidebarMenuItem key={chat.id}>
                   <SidebarMenuButton asChild>
-                    <a href={`/protected/chat/${chat.id}`} className="flex-1 m-2">
+                    <a
+                      href={`/protected/chat/${chat.id}`}
+                      className="flex-1 m-2"
+                    >
                       <MessageSquare className="h-4 w-4" />
                       <div className="flex-1 overflow-hidden">
                         <div className="truncate font-medium">{chat.title}</div>
@@ -198,6 +204,9 @@ export function AppSidebar() {
       <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
+              <ThemeSwitcher />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton onClick={logout} className="w-full">
               <LogOut className="h-4 w-4" />
               <span>Logout</span>
@@ -207,4 +216,4 @@ export function AppSidebar() {
       </SidebarFooter>
     </Sidebar>
   );
-} 
+}
