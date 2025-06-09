@@ -6,14 +6,14 @@ export const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string(),
   createdAt: z.coerce.date(),
-  model: z.string().optional(),
+  model: z.string().nullish(), // Handles both null and undefined
 });
 
 // Message creation schema (for API requests)
 export const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().min(1, "Message content is required"),
-  model: z.string().optional(),
+  model: z.string().nullish(), // Handles both null and undefined
 });
 
 // Chat schema
