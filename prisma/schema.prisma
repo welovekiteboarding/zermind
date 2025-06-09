@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User Model - provided by Supabase
+
+// Chat model - represents a conversation session
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") // References Supabase auth.users.id
+  title     String?  // Optional title for the chat
+  shareId   String?  @unique @map("share_id") // For shareable chat links
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  messages Message[]
+  
+  @@map("chats")
+}
+
+// Message model - represents individual messages in a chat
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String   @map("chat_id")
+  role      String   // 'user' or 'assistant'
+  content   String   // The message content
+  model     String?  // Optional: which LLM model was used for assistant messages
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+}

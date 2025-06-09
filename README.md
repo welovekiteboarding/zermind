@@ -1,3 +1,4 @@
+@ -1,45 +1,36 @@
 # 🧠 Zermind – Open Source Multi-LLM Chat App
 
 Zermind is a modern, open-source AI chat app built for the Cloneathon hackathon.  
@@ -31,13 +32,26 @@ cd chat
 ### 2. Install dependencies
 
 ```bash
+npm install
+# or
 yarn install
+# or
+pnpm install
+# or
+bun install
+
 ```
 
 ### 3. Run project
 
 ```bash
+npm run dev
+# or
 yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
 ## License
