@@ -56,6 +56,7 @@ Zermind is built for the [Cloneathon 2025](https://cloneathon.t3.chat) and follo
 | Database       | Supabase Postgres      | Users, chats, messages, share IDs     |
 | ORM            | Prisma                 |                                       |
 | LLM Interface  | Vercel AI SDK          | Unified API for multi-model LLMs      |
+| BYOK           | Open Router            | Unified Interface for LLMs            |
 | Streaming      | Server-Sent Events     | Token-by-token LLM responses          |
 | Optional       | Upstash Redis          | Resumable stream storage              |
 | Hosting        | Vercel                 | Free tier friendly                    |
