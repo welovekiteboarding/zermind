@@ -1,5 +1,6 @@
 {
-  "name": "chat",
+  "name": "zermind",
+  "description": "Zermind is a modern, open-source AI chat app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
