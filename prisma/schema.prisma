@@ -22,6 +22,10 @@ model Chat {
   // Relations
   messages Message[]
   
+  // Indexes for better query performance
+  @@index([userId]) // For getUserChats() query
+  @@index([userId, updatedAt(sort: Desc)]) // For getUserChats() with ordering
+  @@index([id, userId]) // For getChatWithMessages() compound lookup
   @@map("chats")
 }
 
@@ -37,5 +41,9 @@ model Message {
   // Relations
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
   
+  // Indexes for better query performance
+  @@index([chatId]) // For foreign key relationship (may already exist)
+  @@index([chatId, createdAt]) // For getChatWithMessages() with message ordering
+  @@index([createdAt(sort: Desc)]) // For getting latest messages in getUserChats()
   @@map("messages")
 }
