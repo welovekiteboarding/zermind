@@ -36,9 +36,9 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
   };
 
   const modelProviders = [
-    { name: "GPT-4", provider: "OpenAI", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200" },
-    { name: "Claude 3", provider: "Anthropic", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-    { name: "Mistral", provider: "Mistral AI", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
+    { name: "GPT-4", provider: "OpenAI", color: "bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900" },
+    { name: "Claude 3", provider: "Anthropic", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+    { name: "Llama 3.1", provider: "Meta", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
   ];
 
   return (
