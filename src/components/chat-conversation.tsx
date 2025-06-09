@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { type Message } from "@/lib/schemas/chat";
 import { useChat } from "@/hooks/use-chat";
 import { ModelSelector } from "@/components/model-selector";
+import { useSaveMessage, useUpdateChatTitle } from "@/hooks/use-chats-query";
+import { generateChatTitle, shouldUpdateChatTitle } from "@/lib/utils/chat-utils";
 
 interface ChatConversationProps {
   chatId: string;
@@ -32,12 +34,16 @@ export function ChatConversation({
   chatId,
   initialMessages,
   userId, // eslint-disable-line @typescript-eslint/no-unused-vars
-  chatTitle, // eslint-disable-line @typescript-eslint/no-unused-vars
+  chatTitle,
   model: initialModel = "openai/gpt-4o-mini",
 }: ChatConversationProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // TanStack Query mutations
+  const saveMessageMutation = useSaveMessage();
+  const updateChatTitleMutation = useUpdateChatTitle();
 
   const {
     messages,
@@ -53,7 +59,15 @@ export function ChatConversation({
     initialMessages,
     model: selectedModel,
     onFinish: (message) => {
-      // TODO: Save message to database
+      // Save assistant message to database
+      saveMessageMutation.mutate({
+        chatId,
+        message: {
+          role: message.role,
+          content: message.content,
+          model: message.model,
+        }
+      });
       console.log("Message finished:", message);
     },
     onError: (error) => {
@@ -77,8 +91,40 @@ export function ChatConversation({
     if (!input.trim() || isLoading) return;
 
     try {
-      await sendMessage(input.trim());
-      // TODO: Save user message to database
+      const userMessage = input.trim();
+      
+      // Check if this is the first user message and title should be updated
+      const isFirstMessage = messages.length === 0 || 
+        messages.every(msg => msg.role === 'assistant');
+      
+      const shouldUpdateTitle = isFirstMessage && shouldUpdateChatTitle(chatTitle || null);
+      
+      // Send the message
+      await sendMessage(userMessage);
+      
+      // Save user message to database
+      await saveMessageMutation.mutateAsync({
+        chatId,
+        message: {
+          role: 'user',
+          content: userMessage,
+          model: null, // User messages don't have a model
+        }
+      });
+
+      // Update chat title if this is the first user message
+      if (shouldUpdateTitle) {
+        try {
+          const newTitle = generateChatTitle(userMessage);
+          await updateChatTitleMutation.mutateAsync({
+            chatId,
+            data: { title: newTitle }
+          });
+        } catch (error) {
+          console.error("Failed to update chat title:", error);
+          // Don't block the conversation if title update fails
+        }
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
