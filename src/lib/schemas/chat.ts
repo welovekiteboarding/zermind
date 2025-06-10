@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+// Attachment schema
+export const AttachmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+  url: z.string(), // Supabase storage URL
+  type: z.enum(["image", "document"]),
+});
+
 // Base message schema
 export const MessageSchema = z.object({
   id: z.string(),
@@ -7,6 +17,7 @@ export const MessageSchema = z.object({
   content: z.string(),
   createdAt: z.coerce.date(),
   model: z.string().nullish(), // Handles both null and undefined
+  attachments: z.array(AttachmentSchema).optional().default([]),
 });
 
 // Message creation schema (for API requests)
@@ -14,6 +25,7 @@ export const CreateMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().min(1, "Message content is required"),
   model: z.string().nullish(), // Handles both null and undefined
+  attachments: z.array(AttachmentSchema).optional().default([]),
 });
 
 // Chat schema
@@ -73,6 +85,7 @@ export const ErrorResponseSchema = z.object({
 });
 
 // Type exports (inferred from schemas)
+export type Attachment = z.infer<typeof AttachmentSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 export type CreateMessage = z.infer<typeof CreateMessageSchema>;
 export type Chat = z.infer<typeof ChatSchema>;

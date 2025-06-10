@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,9 +14,29 @@ import {
   MessageSquare,
   StopCircle,
   AlertCircle,
+  Upload,
+  X,
+  Paperclip,
+  Image,
+  FileText,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { type Message } from "@/lib/schemas/chat";
+import { type Message, type Attachment } from "@/lib/schemas/chat";
 import { useChat } from "@/hooks/use-chat";
 import { ModelSelector } from "@/components/model-selector";
 import { useSaveMessage, useUpdateChatTitle } from "@/hooks/use-chats-query";
@@ -24,11 +44,9 @@ import {
   generateChatTitle,
   shouldUpdateChatTitle,
 } from "@/lib/utils/chat-utils";
-import { useHasApiKey } from "@/hooks/use-api-keys";
-import {
-  getProviderFromModel,
-  getProviderDisplayName,
-} from "@/lib/utils/model-utils";
+import { MessageAttachment } from "@/components/message-attachment";
+import { useFileAttachments } from "@/hooks/use-file-attachments";
+import { formatBytes } from "@/components/dropzone";
 
 interface ChatConversationProps {
   chatId: string;
@@ -50,10 +68,11 @@ export function ChatConversation({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if user has API key for current model's provider
-  const modelProvider = getProviderFromModel(selectedModel);
-  const hasUserApiKey = useHasApiKey(modelProvider);
+  // File attachments hook
+  const fileAttachments = useFileAttachments({ model: selectedModel });
 
   // TanStack Query mutations
   const saveMessageMutation = useSaveMessage();
@@ -81,6 +100,7 @@ export function ChatConversation({
             role: message.role,
             content: message.content,
             model: message.model,
+            attachments: [], // Assistant messages don't have attachments
           },
         });
         console.log("Message finished:", message);
@@ -106,6 +126,32 @@ export function ChatConversation({
     scrollToBottom();
   }, [messages]);
 
+    // File selection handlers
+  const handleFileSelect = useCallback((type: "image" | "document") => {
+    if (!fileInputRef.current) return;
+    
+    if (type === "image") {
+      fileInputRef.current.accept = fileAttachments.allowedMimeTypes
+        .filter(mime => mime.startsWith("image/"))
+        .join(",");
+    } else {
+      fileInputRef.current.accept = fileAttachments.allowedMimeTypes
+        .filter(mime => !mime.startsWith("image/"))
+        .join(",");
+    }
+    
+    fileInputRef.current.click();
+  }, [fileAttachments.allowedMimeTypes]);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      fileAttachments.addFiles(files);
+    }
+    // Reset input
+    e.target.value = "";
+  }, [fileAttachments.addFiles]);
+
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
@@ -127,12 +173,24 @@ export function ChatConversation({
       // Save user message to database FIRST with current timestamp
       // This ensures proper chronological ordering
       try {
+        // Upload files first if any
+        let attachments: Attachment[] = [];
+        if (fileAttachments.pendingFiles.length > 0) {
+          try {
+            attachments = await fileAttachments.uploadFiles();
+          } catch (error) {
+            console.error("Failed to upload files:", error);
+            throw new Error("Failed to upload attachments. Please try again.");
+          }
+        }
+
         await saveMessageMutation.mutateAsync({
           chatId,
           message: {
             role: "user",
             content: userMessage,
             model: null, // User messages don't have a model
+            attachments,
           },
         });
       } catch (error) {
@@ -143,6 +201,7 @@ export function ChatConversation({
       // Then send the message to AI
       try {
         await sendMessage(userMessage);
+        // Files are already cleared by the uploadFiles function
       } catch (error) {
         console.error("Failed to send message to AI:", error);
         throw new Error("Failed to get AI response. Please try again.");
@@ -190,7 +249,57 @@ export function ChatConversation({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div 
+      ref={chatContainerRef}
+      className="flex flex-col h-full relative"
+      onDragEnter={fileAttachments.handleDragEnter}
+      onDragLeave={fileAttachments.handleDragLeave}
+      onDragOver={fileAttachments.handleDragOver}
+      onDrop={fileAttachments.handleDrop}
+    >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      {/* Drag Drop Dialog */}
+      <Dialog 
+        open={fileAttachments.isDragOver && fileAttachments.supportsAttachments} 
+        onOpenChange={() => {}} // Prevent manual closing, only close on drag leave
+      >
+        <DialogContent 
+          className="pointer-events-none border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm"
+          showCloseButton={false}
+        >
+          <div className="text-center space-y-4">
+            <Upload className="h-12 w-12 text-primary mx-auto" />
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">Drop files here</DialogTitle>
+              <DialogDescription className="text-sm">
+                {fileAttachments.modelCapabilities.supportsImages && fileAttachments.modelCapabilities.supportsDocuments
+                  ? "Upload images and PDFs to enhance your conversation"
+                  : fileAttachments.modelCapabilities.supportsImages
+                  ? "Upload images to enhance your conversation"
+                  : "Upload documents to enhance your conversation"}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex justify-center space-x-4 text-xs text-muted-foreground">
+              {fileAttachments.modelCapabilities.supportsImages && (
+                <span>Images: up to {formatBytes(fileAttachments.modelCapabilities.maxImageSize! * 1024 * 1024)}</span>
+              )}
+              {fileAttachments.modelCapabilities.supportsDocuments && (
+                <span>PDFs: up to {formatBytes(fileAttachments.modelCapabilities.maxDocumentSize! * 1024 * 1024)}</span>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Error Display */}
@@ -254,6 +363,7 @@ export function ChatConversation({
                         <div className="whitespace-pre-wrap break-words text-sm">
                           {message.content}
                         </div>
+                        <MessageAttachment attachments={message.attachments} />
                         <div className="flex items-center justify-between mt-2">
                           <Badge
                             variant="outline"
@@ -323,16 +433,75 @@ export function ChatConversation({
               className="w-full max-w-xs"
             />
 
-            {/* BYOK Status Indicator */}
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={hasUserApiKey ? "default" : "secondary"}
-                className="text-xs"
-              >
-                {hasUserApiKey ? <>🔑 Your {getProviderDisplayName(modelProvider)} Key</> : null}
-              </Badge>
-            </div>
+            {/* Attachment Button */}
+            {fileAttachments.supportsAttachments && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={isLoading}>
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Attach
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuLabel>Attach Files</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {fileAttachments.modelCapabilities.supportsImages && (
+                    <DropdownMenuItem onClick={() => handleFileSelect("image")}>
+                      <Image className="h-4 w-4 mr-2" />
+                      Upload Images
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        up to {Math.round(fileAttachments.modelCapabilities.maxImageSize! || 5)}MB
+                      </span>
+                    </DropdownMenuItem>
+                  )}
+                  {fileAttachments.modelCapabilities.supportsDocuments && (
+                    <DropdownMenuItem onClick={() => handleFileSelect("document")}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Upload PDFs
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        up to {Math.round(fileAttachments.modelCapabilities.maxDocumentSize! || 5)}MB
+                      </span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Pending Files */}
+            {fileAttachments.pendingFiles.length > 0 && (
+              <div className="space-y-2">
+                {fileAttachments.pendingFiles.map((file) => (
+                  <div key={file.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4">
+                        {file.type.startsWith("image/") ? "🖼️" : "📄"}
+                      </div>
+                      <span className="text-sm font-medium truncate">{file.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {formatBytes(file.size)}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileAttachments.removeFile(file.id)}
+                      disabled={isLoading || fileAttachments.isUploading}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  {fileAttachments.supportsAttachments 
+                    ? "Drop more files anywhere or click Attach to select files" 
+                    : "Files ready to send"}
+                </p>
+              </div>
+            )}
           </div>
+
+          
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="flex space-x-2">
@@ -372,6 +541,15 @@ export function ChatConversation({
           </form>
           <p className="text-xs text-muted-foreground text-center">
             Press Enter to send, Shift + Enter for new line
+            {fileAttachments.supportsAttachments && fileAttachments.pendingFiles.length === 0 && (
+              <span className="block mt-1">
+                💡 Drag and drop {fileAttachments.modelCapabilities.supportsImages && fileAttachments.modelCapabilities.supportsDocuments 
+                  ? "images or PDFs" 
+                  : fileAttachments.modelCapabilities.supportsImages 
+                  ? "images" 
+                  : "PDFs"} anywhere to attach
+              </span>
+            )}
           </p>
         </div>
       )}

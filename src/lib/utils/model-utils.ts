@@ -61,3 +61,114 @@ export function isDirectProviderModel(model: string): boolean {
     model.startsWith("gemini-")
   );
 }
+
+/**
+ * Model capabilities interface
+ */
+export interface ModelCapabilities {
+  supportsImages: boolean;
+  supportsDocuments: boolean;
+  maxImageSize?: number; // in MB
+  maxDocumentSize?: number; // in MB
+  supportedImageTypes?: string[];
+  supportedDocumentTypes?: string[];
+}
+
+/**
+ * Gets model capabilities for file attachments
+ */
+export function getModelCapabilities(model: string): ModelCapabilities {
+  const provider = getProviderFromModel(model);
+  
+  // Default capabilities - no file support
+  const defaultCapabilities: ModelCapabilities = {
+    supportsImages: false,
+    supportsDocuments: false,
+  };
+
+  switch (provider) {
+    case "openai":
+      // GPT-4o and GPT-4o-mini support vision
+      if (model.includes("gpt-4o")) {
+        return {
+          supportsImages: true,
+          supportsDocuments: false, // OpenAI doesn't support document upload via vision API
+          maxImageSize: 20, // 20MB limit
+          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+        };
+      }
+      return defaultCapabilities;
+
+    case "anthropic":
+      // Claude 3+ models support vision
+      if (model.includes("claude-3")) {
+        return {
+          supportsImages: true,
+          supportsDocuments: false, // Claude doesn't support document upload directly
+          maxImageSize: 5, // 5MB limit for Claude
+          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+        };
+      }
+      return defaultCapabilities;
+
+    case "google":
+      // Gemini models support multimodal input
+      if (model.includes("gemini")) {
+        return {
+          supportsImages: true,
+          supportsDocuments: true, // Gemini can handle PDFs
+          maxImageSize: 20,
+          maxDocumentSize: 10,
+          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+          supportedDocumentTypes: ["application/pdf"],
+        };
+      }
+      return defaultCapabilities;
+
+    default:
+      return defaultCapabilities;
+  }
+}
+
+/**
+ * Checks if a model supports any file attachments
+ */
+export function modelSupportsAttachments(model: string): boolean {
+  const capabilities = getModelCapabilities(model);
+  return capabilities.supportsImages || capabilities.supportsDocuments;
+}
+
+/**
+ * Gets allowed MIME types for a model
+ */
+export function getAllowedMimeTypes(model: string): string[] {
+  const capabilities = getModelCapabilities(model);
+  const allowedTypes: string[] = [];
+  
+  if (capabilities.supportsImages && capabilities.supportedImageTypes) {
+    allowedTypes.push(...capabilities.supportedImageTypes);
+  }
+  
+  if (capabilities.supportsDocuments && capabilities.supportedDocumentTypes) {
+    allowedTypes.push(...capabilities.supportedDocumentTypes);
+  }
+  
+  return allowedTypes;
+}
+
+/**
+ * Gets maximum file size for a model based on file type
+ */
+export function getMaxFileSize(model: string, mimeType: string): number {
+  const capabilities = getModelCapabilities(model);
+  
+  if (mimeType.startsWith("image/") && capabilities.maxImageSize) {
+    return capabilities.maxImageSize * 1024 * 1024; // Convert MB to bytes
+  }
+  
+  if (mimeType === "application/pdf" && capabilities.maxDocumentSize) {
+    return capabilities.maxDocumentSize * 1024 * 1024; // Convert MB to bytes
+  }
+  
+  return 5 * 1024 * 1024; // Default 5MB limit
+}
