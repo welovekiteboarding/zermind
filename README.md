@@ -1,9 +1,7 @@
 <a href="https://zermind.ai/">
   <img alt="Zermind – Open Source Multi-LLM Chat App" src="https://zermind.ai/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
+  <h1 align="center">Zermind – Open Source Multi-LLM Chat App</h1>
 </a>
-
-# Zermind – Open Source Multi-LLM Chat App
 
 Zermind is a modern, open-source AI chat app built for the [Cloneathon 2025](https://cloneathon.t3.chat) hackathon.  
 It supports multiple language models, user authentication, chat history sync, and **BYOK (Bring Your Own Key)** functionality for using your own API credits securely.
