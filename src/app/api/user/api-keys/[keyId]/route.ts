@@ -10,7 +10,7 @@ import {
 // PATCH /api/user/api-keys/[keyId] - Update API key
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { keyId: string } }
+  { params }: { params: Promise<{ keyId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -25,10 +25,11 @@ export async function PATCH(
 
     const body = await request.json();
     const validatedData = UpdateApiKeySchema.parse(body);
+    const { keyId } = await params;
 
     // Update the API key
     const { updateApiKey } = await import('@/lib/db/api-keys');
-    const updatedApiKey = await updateApiKey(params.keyId, user.id, validatedData);
+    const updatedApiKey = await updateApiKey(keyId, user.id, validatedData);
 
     return NextResponse.json(
       UpdateApiKeyResponseSchema.parse(updatedApiKey)
@@ -65,7 +66,7 @@ export async function PATCH(
 // DELETE /api/user/api-keys/[keyId] - Delete API key
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { keyId: string } }
+  { params }: { params: Promise<{ keyId: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -78,9 +79,11 @@ export async function DELETE(
       );
     }
 
+    const { keyId } = await params;
+
     // Delete the API key
     const { deleteApiKey } = await import('@/lib/db/api-keys');
-    const success = await deleteApiKey(params.keyId, user.id);
+    const success = await deleteApiKey(keyId, user.id);
 
     if (!success) {
       return NextResponse.json(
