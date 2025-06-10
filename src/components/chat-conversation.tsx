@@ -20,7 +20,15 @@ import { type Message } from "@/lib/schemas/chat";
 import { useChat } from "@/hooks/use-chat";
 import { ModelSelector } from "@/components/model-selector";
 import { useSaveMessage, useUpdateChatTitle } from "@/hooks/use-chats-query";
-import { generateChatTitle, shouldUpdateChatTitle } from "@/lib/utils/chat-utils";
+import {
+  generateChatTitle,
+  shouldUpdateChatTitle,
+} from "@/lib/utils/chat-utils";
+import { useHasApiKey } from "@/hooks/use-api-keys";
+import {
+  getProviderFromModel,
+  getProviderDisplayName,
+} from "@/lib/utils/model-utils";
 
 interface ChatConversationProps {
   chatId: string;
@@ -40,6 +48,10 @@ export function ChatConversation({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if user has API key for current model's provider
+  const modelProvider = getProviderFromModel(selectedModel);
+  const hasUserApiKey = useHasApiKey(modelProvider);
 
   // TanStack Query mutations
   const saveMessageMutation = useSaveMessage();
@@ -67,7 +79,7 @@ export function ChatConversation({
             role: message.role,
             content: message.content,
             model: message.model,
-          }
+          },
         });
         console.log("Message finished:", message);
       } catch (error) {
@@ -80,8 +92,8 @@ export function ChatConversation({
   });
 
   // Sort messages chronologically (oldest first) to ensure correct display order
-  const sortedMessages = [...messages].sort((a, b) => 
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  const sortedMessages = [...messages].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   const scrollToBottom = () => {
@@ -101,23 +113,25 @@ export function ChatConversation({
 
     try {
       const userMessage = input.trim();
-      
+
       // Check if this is the first user message and title should be updated
-      const isFirstMessage = messages.length === 0 || 
-        messages.every(msg => msg.role === 'assistant');
-      
-      const shouldUpdateTitle = isFirstMessage && shouldUpdateChatTitle(chatTitle || null);
-      
+      const isFirstMessage =
+        messages.length === 0 ||
+        messages.every((msg) => msg.role === "assistant");
+
+      const shouldUpdateTitle =
+        isFirstMessage && shouldUpdateChatTitle(chatTitle || null);
+
       // Save user message to database FIRST with current timestamp
       // This ensures proper chronological ordering
       try {
         await saveMessageMutation.mutateAsync({
           chatId,
           message: {
-            role: 'user',
+            role: "user",
             content: userMessage,
             model: null, // User messages don't have a model
-          }
+          },
         });
       } catch (error) {
         console.error("Failed to save user message:", error);
@@ -138,7 +152,7 @@ export function ChatConversation({
           const newTitle = generateChatTitle(userMessage);
           await updateChatTitleMutation.mutateAsync({
             chatId,
-            data: { title: newTitle }
+            data: { title: newTitle },
           });
         } catch (error) {
           console.error("Failed to update chat title:", error);
@@ -164,8 +178,8 @@ export function ChatConversation({
   const formatTime = (createdAt: Date) => {
     try {
       // Use a more deterministic approach to avoid hydration mismatches
-      const hours = createdAt.getHours().toString().padStart(2, '0');
-      const minutes = createdAt.getMinutes().toString().padStart(2, '0');
+      const hours = createdAt.getHours().toString().padStart(2, "0");
+      const minutes = createdAt.getMinutes().toString().padStart(2, "0");
       return `${hours}:${minutes}`;
     } catch (error) {
       console.error("Failed to format time:", error);
@@ -297,16 +311,26 @@ export function ChatConversation({
 
       {/* Message Input */}
       <div className="border-t p-4 bg-background/50 backdrop-blur space-y-3">
-        {/* Model Selector */}
-        <div className="flex justify-start">
+        {/* Model Selector and BYOK Status */}
+        <div className="flex items-center gap-3 justify-start">
           <ModelSelector
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
             disabled={isLoading}
             className="w-full max-w-xs"
           />
+
+          {/* BYOK Status Indicator */}
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={hasUserApiKey ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {hasUserApiKey ? <>🔑 Your {getProviderDisplayName(modelProvider)} Key</> : null}
+            </Badge>
+          </div>
         </div>
-        
+
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <Input
