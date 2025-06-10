@@ -3,7 +3,7 @@
 import { type Attachment } from "@/lib/schemas/chat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Image, FileText, ExternalLink } from "lucide-react";
+import { Image as ImageIcon, FileText, ExternalLink } from "lucide-react";
 import { formatBytes } from "@/components/dropzone";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
@@ -27,7 +27,7 @@ export function MessageAttachment({ attachments, className }: MessageAttachmentP
 
   const getFileTypeIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) {
-      return <Image className="h-4 w-4" />;
+      return <ImageIcon className="h-4 w-4" />;
     }
     return <FileText className="h-4 w-4" />;
   };
