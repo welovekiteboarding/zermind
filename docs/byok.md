@@ -53,7 +53,7 @@ model ApiKey {
 
 ### 1. Environment Variables
 
-Add to your `.env.local` file:
+Add to your `.env` file:
 
 ```bash
 # REQUIRED: Strong encryption secret (32+ characters)

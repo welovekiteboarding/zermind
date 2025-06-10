@@ -54,10 +54,10 @@ bun install
 
 ### 3. Environment Setup
 
-Copy `.env.example` to `.env.local` and add your configuration:
+Copy `.env.example` to `.env` and add your configuration:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
 Required environment variables:

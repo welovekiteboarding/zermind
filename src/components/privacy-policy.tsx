@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
           </CardHeader>
           <CardContent className="p-6 sm:p-10">
             <div className="mb-8 text-sm text-muted-foreground">
-              <p>Last updated: January 2025</p>
+              <p>Last updated: June 2025</p>
             </div>
 
             <div className="prose prose-neutral max-w-none mb-8">

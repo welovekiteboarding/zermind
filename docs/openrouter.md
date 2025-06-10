@@ -135,7 +135,7 @@ OpenRouter uses pay-as-you-go pricing:
 ### "OpenRouter API key not configured" Error
 
 Make sure you have:
-1. Created a `.env.local` file in the project root
+1. Created a `.env` file in the project root
 2. Added `OPENROUTER_API_KEY=your_key_here` 
 3. Restarted your development server
 

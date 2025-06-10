@@ -45,7 +45,7 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key_here
 2. **OpenRouter Fallback**: If no user key exists, the app always uses OpenRouter (works with all models)
 3. **Simple Configuration**: Only requires one system API key (OpenRouter)
 
-## Example .env.local
+## Example .env
 
 ```bash
 # Database
@@ -66,7 +66,7 @@ OPENROUTER_API_KEY="sk-or-v1-your-openrouter-key"
 ## Security Notes
 
 ⚠️ **Important**: 
-- Never commit `.env.local` to version control
+- Never commit `.env` to version control
 - Use strong, randomly generated secrets for `API_KEY_ENCRYPTION_SECRET`
 - Rotate API keys regularly
 - User API keys are encrypted and can only be decrypted by your application 
