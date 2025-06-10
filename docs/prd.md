@@ -11,7 +11,7 @@ Zermind is built for the [Cloneathon 2025](https://cloneathon.t3.chat) and follo
 ## 🎯 Goals
 
 ### Core Objectives
-- Support multiple LLM providers (OpenAI, Anthropic, Mistral, etc.)
+- Support multiple LLM providers (OpenAI, Anthropic, Meta, etc.)
 - Allow users to authenticate, manage sessions, and sync chat history
 - Stream LLM responses in real time
 - Keep the codebase clean, documented, and open source
