@@ -36,6 +36,7 @@ interface ChatConversationProps {
   userId: string;
   chatTitle?: string;
   model?: string;
+  isSharedView?: boolean; // New prop for read-only mode
 }
 
 export function ChatConversation({
@@ -44,6 +45,7 @@ export function ChatConversation({
   userId, // eslint-disable-line @typescript-eslint/no-unused-vars
   chatTitle,
   model: initialModel = "openai/gpt-4o-mini",
+  isSharedView = false,
 }: ChatConversationProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
@@ -309,68 +311,79 @@ export function ChatConversation({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <div className="border-t p-4 bg-background/50 backdrop-blur space-y-3">
-        {/* Model Selector and BYOK Status */}
-        <div className="flex items-center gap-3 justify-start">
-          <ModelSelector
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            disabled={isLoading}
-            className="w-full max-w-xs"
-          />
+      {/* Message Input - Hidden in shared view */}
+      {!isSharedView && (
+        <div className="border-t p-4 bg-background/50 backdrop-blur space-y-3">
+          {/* Model Selector and BYOK Status */}
+          <div className="flex items-center gap-3 justify-start">
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              disabled={isLoading}
+              className="w-full max-w-xs"
+            />
 
-          {/* BYOK Status Indicator */}
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={hasUserApiKey ? "default" : "secondary"}
-              className="text-xs"
-            >
-              {hasUserApiKey ? <>🔑 Your {getProviderDisplayName(modelProvider)} Key</> : null}
-            </Badge>
+            {/* BYOK Status Indicator */}
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={hasUserApiKey ? "default" : "secondary"}
+                className="text-xs"
+              >
+                {hasUserApiKey ? <>🔑 Your {getProviderDisplayName(modelProvider)} Key</> : null}
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        {/* Input Form */}
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <Input
-            placeholder="Type your message..."
-            value={input}
-            onChange={handleInputChange}
-            disabled={isLoading}
-            className="flex-1"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-          />
-          {isLoading ? (
-            <Button
-              type="button"
-              onClick={stop}
-              size="icon"
-              variant="destructive"
-              className="flex-shrink-0"
-            >
-              <StopCircle className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              disabled={!input.trim()}
-              size="icon"
-              className="flex-shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
-        </form>
-        <p className="text-xs text-muted-foreground text-center">
-          Press Enter to send, Shift + Enter for new line
-        </p>
-      </div>
+          {/* Input Form */}
+          <form onSubmit={handleSubmit} className="flex space-x-2">
+            <Input
+              placeholder="Type your message..."
+              value={input}
+              onChange={handleInputChange}
+              disabled={isLoading}
+              className="flex-1"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+            />
+            {isLoading ? (
+              <Button
+                type="button"
+                onClick={stop}
+                size="icon"
+                variant="destructive"
+                className="flex-shrink-0"
+              >
+                <StopCircle className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={!input.trim()}
+                size="icon"
+                className="flex-shrink-0"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
+          </form>
+          <p className="text-xs text-muted-foreground text-center">
+            Press Enter to send, Shift + Enter for new line
+          </p>
+        </div>
+      )}
+
+      {/* Read-only footer for shared view */}
+      {isSharedView && (
+        <div className="border-t p-4 bg-background/50 backdrop-blur">
+          <p className="text-xs text-muted-foreground text-center">
+            This is a shared chat conversation in read-only mode
+          </p>
+        </div>
+      )}
     </div>
   );
 }

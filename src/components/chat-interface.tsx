@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageCircle, Sparkles, Zap } from "lucide-react";
@@ -20,7 +26,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
 
   const handleStartChat = async () => {
     if (!user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
 
@@ -29,16 +35,29 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
     try {
       // TODO: Create a new chat and navigate to it
       // For now, redirect to the protected route (will become chat interface)
-      router.push('/protected');
+      router.push("/protected");
     } catch (error) {
       console.error("Error starting chat:", error);
     }
   };
 
   const modelProviders = [
-    { name: "GPT-4", provider: "OpenAI", color: "bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900" },
-    { name: "Claude 3", provider: "Anthropic", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
-    { name: "Llama 3.1", provider: "Meta", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
+    {
+      name: "GPT-4",
+      provider: "OpenAI",
+      color: "bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900",
+    },
+    {
+      name: "Claude 3",
+      provider: "Anthropic",
+      color:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    },
+    {
+      name: "Llama 3.1",
+      provider: "Meta",
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    },
   ];
 
   return (
@@ -46,7 +65,6 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center space-x-2">
-
           <h1 className="text-4xl font-bold bg-primary bg-clip-text text-transparent">
             Zermind
           </h1>
@@ -68,10 +86,9 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             <span>Start Chatting</span>
           </CardTitle>
           <CardDescription>
-            {user 
-              ? "Choose from multiple AI models and start your conversation" 
-              : "Sign in to access multiple AI models and start chatting"
-            }
+            {user
+              ? "Choose from multiple AI models and start your conversation"
+              : "Sign in to access multiple AI models and start chatting"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -83,13 +100,19 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </h3>
             <div className="flex flex-wrap gap-2">
               {modelProviders.map((model, index) => (
-                <Badge 
-                  key={index} 
-                  variant="secondary" 
-                  className={`${model.color} ${user ? 'hover:scale-105 cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition-transform`}
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className={`${model.color} ${
+                    user
+                      ? "hover:scale-105 cursor-pointer"
+                      : "opacity-60 cursor-not-allowed"
+                  } transition-transform`}
                 >
                   {model.name}
-                  <span className="ml-1 text-xs opacity-70">by {model.provider}</span>
+                  <span className="ml-1 text-xs opacity-70">
+                    by {model.provider}
+                  </span>
                 </Badge>
               ))}
             </div>
@@ -99,7 +122,11 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <div className="space-y-4">
             <div className="relative">
               <Input
-                placeholder={user ? "What would you like to chat about today?" : "Sign in to start chatting..."}
+                placeholder={
+                  user
+                    ? "What would you like to chat about today?"
+                    : "Sign in to start chatting..."
+                }
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 disabled={!user}
@@ -114,17 +141,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 <MessageCircle className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
-            
-            <Button 
+
+            <Button
               onClick={handleStartChat}
               disabled={!!user && !message.trim()}
               className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/80 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none"
             >
               <Sparkles className="mr-2 h-5 w-5" />
-              {!user 
-                ? "Sign In to Start Chatting" 
-                : "Start Conversation"
-              }
+              {!user ? "Sign In to Start Chatting" : "Start Conversation"}
             </Button>
           </div>
         </CardContent>
@@ -141,7 +165,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border border-primary/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors">
           <CardContent className="p-4 text-center">
             <MessageCircle className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -151,7 +175,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card className="border border-primary/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors">
           <CardContent className="p-4 text-center">
             <Zap className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -167,16 +191,38 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       <div className="text-center text-sm text-muted-foreground">
         <p>
           Open source • Privacy-focused • Built for{" "}
-          <Link 
-            href="https://cloneathon.t3.chat" 
-            target="_blank" 
+          <Link
+            href="https://cloneathon.t3.chat"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
             Cloneathon 2025
           </Link>
         </p>
+        <p className="mt-2">
+          <Link
+            href="/privacy"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+          >
+            Privacy Policy
+          </Link>
+          {" • "}
+          <Link
+            href="/terms"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+          >
+            Terms of Use
+          </Link>
+          {" • "}
+          <Link
+            href="/imprint"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+          >
+            Imprint
+          </Link>
+        </p>
       </div>
     </div>
   );
-} 
+}

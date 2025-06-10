@@ -111,6 +111,30 @@ async function saveMessage(
   return response.json();
 }
 
+async function generateShareLink(chatId: string) {
+  const response = await fetch(`/api/chats/${chatId}/share`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate share link: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+async function removeShareLink(chatId: string) {
+  const response = await fetch(`/api/chats/${chatId}/share`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to remove share link: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 // Query Hooks
 export function useUserChats(userId: string | undefined) {
   return useQuery({
@@ -209,6 +233,36 @@ export function useSaveMessage() {
 
       // Update chat list to show latest message
       queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+    },
+  });
+}
+
+export function useGenerateShareLink() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (chatId: string) => generateShareLink(chatId),
+    onSuccess: (_result, chatId) => {
+      // Invalidate the specific chat to update shareId
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.details(),
+        predicate: (query) => query.queryKey.includes(chatId),
+      });
+    },
+  });
+}
+
+export function useRemoveShareLink() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (chatId: string) => removeShareLink(chatId),
+    onSuccess: (_result, chatId) => {
+      // Invalidate the specific chat to remove shareId
+      queryClient.invalidateQueries({
+        queryKey: chatKeys.details(),
+        predicate: (query) => query.queryKey.includes(chatId),
+      });
     },
   });
 }

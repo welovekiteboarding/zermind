@@ -6,6 +6,18 @@ import {
   type ChatListItem 
 } from '@/lib/schemas/chat'
 
+import { randomBytes } from 'crypto';
+
+// Generate a cryptographically secure random share ID
+function generateShareId(): string {
+  // Generate 32 random bytes and convert to base64url (URL-safe)
+  return randomBytes(32)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, ''); // Remove padding for cleaner URLs
+}
+
 // Get all chats for a user (for sidebar)
 export async function getUserChats(userId: string): Promise<ChatListItem[]> {
   const rawChats = await prisma.chat.findMany({
@@ -124,4 +136,78 @@ export async function addMessage(
       model
     }
   })
+}
+
+// Get a shared chat by shareId (public access, no user authentication required)
+export async function getSharedChat(shareId: string): Promise<ChatWithMessages | null> {
+  const rawChat = await prisma.chat.findFirst({
+    where: {
+      shareId
+    },
+    include: {
+      messages: {
+        orderBy: {
+          createdAt: 'asc'
+        }
+      }
+    }
+  })
+
+  if (!rawChat) return null
+
+  // Validate and transform the data using Zod
+  return ChatWithMessagesSchema.parse(rawChat)
+}
+
+// Generate or get existing share link for a chat
+export async function generateShareLink(chatId: string, userId: string): Promise<string | null> {
+  // First check if the chat exists and belongs to the user
+  const chat = await prisma.chat.findFirst({
+    where: {
+      id: chatId,
+      userId
+    }
+  })
+
+  if (!chat) return null
+
+  // If chat already has a shareId, return it
+  if (chat.shareId) {
+    return chat.shareId
+  }
+
+  // Generate a new shareId
+  const shareId = generateShareId()
+  
+  // Update the chat with the new shareId
+  await prisma.chat.update({
+    where: {
+      id: chatId,
+      userId
+    },
+    data: {
+      shareId
+    }
+  })
+
+  return shareId
+}
+
+// Remove share link from a chat
+export async function removeShareLink(chatId: string, userId: string): Promise<boolean> {
+  try {
+    await prisma.chat.update({
+      where: {
+        id: chatId,
+        userId
+      },
+      data: {
+        shareId: null
+      }
+    })
+    return true
+  } catch (error) {
+    console.error('Failed to remove share link:', error)
+    return false
+  }
 } 
