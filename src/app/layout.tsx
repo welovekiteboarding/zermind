@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zermind.ai"),
   title: "Zermind - AI Chat",
   description: "Open-source AI chat application with multiple LLM providers",
 };
