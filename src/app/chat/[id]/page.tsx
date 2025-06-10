@@ -13,6 +13,7 @@ interface ChatPageProps {
 export default async function ChatPage({ params }: ChatPageProps) {
   const queryClient = new QueryClient();
   const supabase = await createClient();
+  const { id } = await params;
   
   // Get authenticated user
   const {
@@ -26,13 +27,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   try {
     // Prefetch the current chat data
-    await prefetchChatWithMessagesFromDB(queryClient, params.id, user.id);
+    await prefetchChatWithMessagesFromDB(queryClient, id, user.id);
     
     // Also prefetch the user's chat list for the sidebar
     await prefetchUserChatsFromDB(queryClient, user.id);
 
     // Get the chat data directly for server-side rendering
-    const chat = await getChatWithMessages(params.id, user.id);
+    const chat = await getChatWithMessages(id, user.id);
     
     if (!chat) {
       return <div>Chat not found.</div>;
@@ -44,7 +45,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
           {/* Chat Area */}
           <div className="flex-1 flex flex-col">
             <ChatConversation
-              chatId={params.id}
+              chatId={id}
               initialMessages={chat.messages}
               userId={user.id}
               chatTitle={chat.title || undefined}
@@ -62,13 +63,14 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
 // Optional: Generate metadata
 export async function generateMetadata({ params }: ChatPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) return { title: "Chat" };
 
   try {
-    const chat = await getChatWithMessages(params.id, user.id);
+    const chat = await getChatWithMessages(id, user.id);
     return {
       title: chat?.title || "Chat",
       description: "AI Chat Conversation",
