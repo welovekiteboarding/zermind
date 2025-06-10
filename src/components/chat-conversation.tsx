@@ -163,11 +163,10 @@ export function ChatConversation({
 
   const formatTime = (createdAt: Date) => {
     try {
-      return createdAt.toLocaleTimeString('en-US', {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
+      // Use a more deterministic approach to avoid hydration mismatches
+      const hours = createdAt.getHours().toString().padStart(2, '0');
+      const minutes = createdAt.getMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
     } catch (error) {
       console.error("Failed to format time:", error);
       return "Invalid time";
