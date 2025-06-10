@@ -96,7 +96,7 @@ export default function UsagePage() {
     .slice(0, 7); // Last 7 days
 
   const formatModelName = (model: string) => {
-    return model.replace('openai/', '').replace('anthropic/', '').replace('meta/', '').replace('google/', '');
+    return model.replace('openai/', '').replace('anthropic/', '').replace('meta-llama/', '').replace('google/', '');
   };
 
   const getModelProvider = (model: string) => {
