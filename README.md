@@ -57,6 +57,7 @@ Required environment variables:
 
 - `DATABASE_URL` and `DIRECT_URL` - Supabase database URLs
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase config
+- `OPENROUTER_API_KEY` - Open Router key
 - `API_KEY_ENCRYPTION_SECRET` - Strong secret for encrypting user API keys (32+ chars)
 
 ### 4. Database Setup
