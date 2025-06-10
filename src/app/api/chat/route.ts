@@ -2,6 +2,8 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { logModelUsage } from '@/lib/usage-logger';
+import { createClient } from '@/lib/supabase/server';
 
 // Request schema
 const ChatRequestSchema = z.object({
@@ -21,6 +23,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { messages, model, maxTokens, temperature } = ChatRequestSchema.parse(body);
 
+    // Get user ID for logging (no user content is logged)
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || 'anonymous';
+
     // Check for OpenRouter API key
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
@@ -34,6 +41,9 @@ export async function POST(req: NextRequest) {
         }
       );
     }
+
+    // Log model usage (no user data is logged, only model and user ID)
+    await logModelUsage(model, userId);
 
     // Create OpenRouter provider instance
     const openrouter = createOpenRouter({

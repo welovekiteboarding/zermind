@@ -47,3 +47,20 @@ model Message {
   @@index([createdAt(sort: Desc)]) // For getting latest messages in getUserChats()
   @@map("messages")
 }
+
+// Usage Log model - tracks model usage for analytics (no user content stored)
+model UsageLog {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") // References Supabase auth.users.id
+  model     String   // The AI model used (e.g., "openai/gpt-4o-mini")
+  chatId    String?  @map("chat_id") // Optional: link to specific chat session
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Indexes for better query performance
+  @@index([userId]) // For user-specific usage queries
+  @@index([model]) // For model-specific analytics
+  @@index([createdAt]) // For time-based queries
+  @@index([userId, createdAt]) // For user usage over time
+  @@index([userId, model]) // For user model preferences
+  @@map("usage_logs")
+}

@@ -9,6 +9,7 @@ import {
   Settings,
   Trash2,
   MoreHorizontal,
+  BarChart3,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -41,6 +42,11 @@ const navigationItems = [
     title: "Home",
     url: "/protected",
     icon: Home,
+  },
+  {
+    title: "Usage",
+    url: "/protected/usage",
+    icon: BarChart3,
   },
   {
     title: "Settings",
