@@ -102,7 +102,7 @@ export default function UsagePage() {
   const getModelProvider = (model: string) => {
     if (model.startsWith('openai/')) return 'OpenAI';
     if (model.startsWith('anthropic/')) return 'Anthropic';
-    if (model.startsWith('meta/')) return 'Meta';
+    if (model.startsWith('meta-llama/')) return 'Meta';
     if (model.startsWith('google/')) return 'Google';
     return 'Unknown';
   };
