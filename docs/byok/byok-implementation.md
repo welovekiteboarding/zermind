@@ -122,25 +122,19 @@ Delete an API key permanently
 
 ## Usage in Chat System
 
-To use BYOK keys in your chat system:
+The chat system automatically handles BYOK with this simplified flow:
 
 ```typescript
-import { getActiveApiKey } from '@/lib/db/api-keys';
+// Chat API automatically:
+// 1. Detects provider from model (e.g., "openai/gpt-4" → OpenAI)
+// 2. Checks for user's API key for that provider
+// 3. If user key exists: Use direct provider API (OpenAI, Anthropic, etc.)
+// 4. If no user key: Always fallback to OpenRouter
 
-// In your chat API route
-const userApiKey = await getActiveApiKey(userId, 'openrouter');
-if (userApiKey) {
-  // Use user's API key
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    headers: {
-      'Authorization': `Bearer ${userApiKey}`,
-      // ...
-    }
-  });
-} else {
-  // Fall back to application's API key
-  // ...
-}
+// Benefits:
+// - User keys = Direct API access (better performance, user's credits)
+// - No user keys = OpenRouter fallback (all models still work)
+// - Only requires one system API key (OpenRouter)
 ```
 
 ## Security Best Practices Implemented
