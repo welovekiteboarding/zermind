@@ -17,7 +17,7 @@ import {
   Upload,
   X,
   Paperclip,
-  Image,
+  Image as ImageIcon,
   FileText,
 } from "lucide-react";
 import {
@@ -150,7 +150,7 @@ export function ChatConversation({
     }
     // Reset input
     e.target.value = "";
-  }, [fileAttachments.addFiles]);
+  }, [fileAttachments]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) {
@@ -447,7 +447,7 @@ export function ChatConversation({
                   <DropdownMenuSeparator />
                   {fileAttachments.modelCapabilities.supportsImages && (
                     <DropdownMenuItem onClick={() => handleFileSelect("image")}>
-                      <Image className="h-4 w-4 mr-2" />
+                      <ImageIcon className="h-4 w-4 mr-2" />
                       Upload Images
                       <span className="ml-auto text-xs text-muted-foreground">
                         up to {Math.round(fileAttachments.modelCapabilities.maxImageSize! || 5)}MB
@@ -474,7 +474,7 @@ export function ChatConversation({
                   <div key={file.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
                     <div className="flex items-center space-x-2">
                       <div className="h-4 w-4">
-                        {file.type.startsWith("image/") ? <Image className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
+                        {file.type.startsWith("image/") ? <ImageIcon className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
                       </div>
                       <span className="text-sm font-medium truncate">{file.name}</span>
                       <Badge variant="secondary" className="text-xs">
