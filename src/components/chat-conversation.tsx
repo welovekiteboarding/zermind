@@ -474,7 +474,7 @@ export function ChatConversation({
                   <div key={file.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
                     <div className="flex items-center space-x-2">
                       <div className="h-4 w-4">
-                        {file.type.startsWith("image/") ? "🖼️" : "📄"}
+                        {file.type.startsWith("image/") ? <Image className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
                       </div>
                       <span className="text-sm font-medium truncate">{file.name}</span>
                       <Badge variant="secondary" className="text-xs">
@@ -492,11 +492,6 @@ export function ChatConversation({
                     </Button>
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground">
-                  {fileAttachments.supportsAttachments 
-                    ? "Drop more files anywhere or click Attach to select files" 
-                    : "Files ready to send"}
-                </p>
               </div>
             )}
           </div>
