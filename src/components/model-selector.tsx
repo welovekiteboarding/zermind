@@ -105,7 +105,7 @@ export function ModelSelector({
         <DropdownMenuSeparator />
         
         {/* Group by provider */}
-        {["Anthropic", "OpenAI", "Meta", "Mistral AI", "Google"].map((provider) => {
+        {["Anthropic", "OpenAI", "Meta", "Google"].map((provider) => {
           const providerModels = MODELS.filter(model => model.provider === provider);
           if (providerModels.length === 0) return null;
           
