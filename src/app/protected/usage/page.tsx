@@ -96,12 +96,13 @@ export default function UsagePage() {
     .slice(0, 7); // Last 7 days
 
   const formatModelName = (model: string) => {
-    return model.replace('openai/', '').replace('anthropic/', '').replace('google/', '');
+    return model.replace('openai/', '').replace('anthropic/', '').replace('meta/', '').replace('google/', '');
   };
 
   const getModelProvider = (model: string) => {
     if (model.startsWith('openai/')) return 'OpenAI';
     if (model.startsWith('anthropic/')) return 'Anthropic';
+    if (model.startsWith('meta/')) return 'Meta';
     if (model.startsWith('google/')) return 'Google';
     return 'Unknown';
   };
