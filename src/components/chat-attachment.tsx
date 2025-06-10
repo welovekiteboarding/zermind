@@ -19,7 +19,7 @@ import {
 } from "@/lib/utils/model-utils";
 import { type Attachment } from "@/lib/schemas/chat";
 import { nanoid } from "nanoid";
-import { Paperclip, X, Image, FileText } from "lucide-react";
+import { Paperclip, X, Image as ImageIcon, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatAttachmentProps {
@@ -69,7 +69,7 @@ export function ChatAttachment({
     onAttachmentsChange([...attachments, ...newAttachments]);
     setShowDropzone(false);
     upload.setFiles([]);
-  }, [upload.files, attachments, onAttachmentsChange, upload]);
+  }, [attachments, onAttachmentsChange, upload]);
 
   const handleRemoveAttachment = useCallback(
     (attachmentId: string) => {
@@ -80,7 +80,7 @@ export function ChatAttachment({
 
   const getFileTypeIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) {
-      return <Image className="h-4 w-4" />;
+      return <ImageIcon className="h-4 w-4" />;
     }
     return <FileText className="h-4 w-4" />;
   };
