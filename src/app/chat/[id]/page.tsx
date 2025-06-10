@@ -5,9 +5,9 @@ import { ChatConversation } from "@/components/chat-conversation";
 import { getChatWithMessages } from "@/lib/db/chats";
 
 interface ChatPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
