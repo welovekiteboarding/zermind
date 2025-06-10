@@ -1,7 +1,7 @@
 # 🧠 Zermind – Open Source Multi-LLM Chat App
 
 Zermind is a modern, open-source AI chat app built for the [Cloneathon 2025](https://cloneathon.t3.chat) hackathon.  
-It supports multiple language models, user authentication, chat history sync, and bonus features like resumable streams and shareable chat links.
+It supports multiple language models, user authentication, chat history sync, and **BYOK (Bring Your Own Key)** functionality for using your own API credits securely.
 
 ---
 
@@ -42,7 +42,30 @@ bun install
 
 ```
 
-### 3. Run project
+### 3. Environment Setup
+
+Copy `.env.example` to `.env.local` and add your configuration:
+
+```bash
+cp .env.example .env.local
+```
+
+Required environment variables:
+- `DATABASE_URL` and `DIRECT_URL` - Supabase database URLs
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase config
+- `API_KEY_ENCRYPTION_SECRET` - Strong secret for encrypting user API keys (32+ chars)
+
+### 4. Database Setup
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database
+npx prisma db push
+```
+
+### 5. Run project
 
 ```bash
 npm run dev
@@ -53,6 +76,27 @@ pnpm dev
 # or
 bun dev
 ```
+
+---
+
+## 🔑 BYOK (Bring Your Own Key)
+
+Zermind supports secure storage of your own API keys for various AI providers:
+
+- **OpenRouter** - Access to multiple AI models
+- **OpenAI** - GPT models
+- **Anthropic** - Claude models  
+- **Meta** - Llama models
+- **Google** - Gemini models
+
+### Security Features
+- 🔐 AES-256-GCM encryption for all stored keys
+- 🛡️ Keys encrypted with your own secret
+- 🔍 Only you can access your keys
+- 📡 HTTPS-only transmission
+- 👀 Key previews (never full keys in UI)
+
+See [docs/byok-implementation.md](docs/byok-implementation.md) for detailed security information.
 
 ## License
 MIT – use it freely, contribute back if you like.

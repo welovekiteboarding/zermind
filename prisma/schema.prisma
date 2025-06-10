@@ -64,3 +64,23 @@ model UsageLog {
   @@index([userId, model]) // For user model preferences
   @@map("usage_logs")
 }
+
+// API Key model - stores encrypted user API keys for BYOK functionality
+model ApiKey {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id") // References Supabase auth.users.id
+  provider      String   // The AI provider (e.g., "openrouter", "openai", "anthropic")
+  encryptedKey  String   @map("encrypted_key") // AES-256 encrypted API key
+  keyName       String?  @map("key_name") // Optional user-friendly name for the key
+  isActive      Boolean  @default(true) @map("is_active") // Whether this key should be used
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  lastUsedAt    DateTime? @map("last_used_at") // Track when key was last used
+  
+  // Indexes for better query performance
+  @@index([userId]) // For user-specific key queries
+  @@index([userId, provider]) // For getting user keys by provider
+  @@index([userId, isActive]) // For getting active keys
+  @@unique([userId, provider, keyName]) // Prevent duplicate key names per provider per user
+  @@map("api_keys")
+}

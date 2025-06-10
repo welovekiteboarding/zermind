@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ApiKeyManagement } from "@/components/api-key-management";
 import { User, Settings, Shield, Database } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -88,21 +89,28 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Chat Preferences
+            Chat Preferences & API Keys
           </CardTitle>
-          <CardDescription>Customize your chat experience</CardDescription>
+          <CardDescription>Customize your chat experience and manage your API keys</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            Chat preferences will be implemented in future updates. This will
-            include:
+        <CardContent className="space-y-6">
+          {/* API Key Management */}
+          <ApiKeyManagement />
+          
+          {/* Other Chat Preferences */}
+          <div className="pt-6 border-t">
+            <h4 className="font-medium mb-3">Other Preferences</h4>
+            <div className="text-sm text-muted-foreground">
+              Additional chat preferences will be implemented in future updates. This will
+              include:
+            </div>
+            <ul className="text-sm space-y-2 ml-4 mt-2">
+              <li>• Default AI model selection</li>
+              <li>• Message history settings</li>
+              <li>• Notification preferences</li>
+              <li>• Theme customization</li>
+            </ul>
           </div>
-          <ul className="text-sm space-y-2 ml-4">
-            <li>• Default AI model selection</li>
-            <li>• Message history settings</li>
-            <li>• Notification preferences</li>
-            <li>• Theme customization</li>
-          </ul>
         </CardContent>
       </Card>
 
