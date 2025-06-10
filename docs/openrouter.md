@@ -49,12 +49,6 @@ The integration supports multiple AI models through OpenRouter:
 - **Llama 3.1 405B** - Open source, great for general tasks
 - **Llama 3.1 70B** - Balanced performance and speed
 
-### Mistral AI
-- **Mistral Large** - High-performance multilingual model
-
-### Google
-- **Gemini Pro 1.5** - Large context window, great for long documents
-
 ## 🛠 Technical Implementation
 
 ### API Route (`/api/chat`)
