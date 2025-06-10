@@ -51,6 +51,7 @@ export function useChat({
         content: message.content,
         createdAt: message.createdAt || new Date(),
         model,
+        attachments: [],
       };
       onFinish?.(formattedMessage);
     },
@@ -67,6 +68,7 @@ export function useChat({
     content: msg.content,
     createdAt: msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt || Date.now()),
     model: msg.role === 'assistant' ? model : undefined,
+    attachments: [],
   }));
 
   return {
