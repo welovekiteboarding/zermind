@@ -14,6 +14,7 @@ import {
   Zap,
   Users,
   Share,
+  Bot,
 } from "lucide-react";
 
 export default async function ProtectedPage() {
@@ -44,17 +45,31 @@ export default async function ProtectedPage() {
                 <CardTitle className="text-blue-700 dark:text-blue-300">
                   Chat Mode
                 </CardTitle>
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-700"
+                >
+                  Default
+                </Badge>
               </div>
-              <CardDescription>
+              <CardDescription className="text-start">
                 Traditional linear conversations
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm space-y-2 text-muted-foreground">
-                <li>• Linear chat interface</li>
-                <li>• Multiple AI models</li>
-                <li>• Real-time streaming</li>
-                <li>• Message history</li>
+                <li className="flex items-center gap-2">
+                  <MessageSquare className="h-3 w-3" />
+                  Linear chat interface
+                </li>
+                <li className="flex items-center gap-2">
+                  <Bot className="h-3 w-3" />
+                  Multiple AI models
+                </li>
+                <li className="flex items-center gap-2">
+                  <Zap className="h-3 w-3" />
+                  Real-time streaming
+                </li>
               </ul>
             </CardContent>
           </Card>
@@ -73,7 +88,7 @@ export default async function ProtectedPage() {
                   New!
                 </Badge>
               </div>
-              <CardDescription>
+              <CardDescription className="text-start">
                 Revolutionary conversation visualization
               </CardDescription>
             </CardHeader>
