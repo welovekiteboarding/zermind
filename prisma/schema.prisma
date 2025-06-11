@@ -103,7 +103,7 @@ model ApiKey {
   userId       String    @map("user_id") // References Supabase auth.users.id
   provider     String // The AI provider (e.g., "openrouter", "openai", "anthropic")
   encryptedKey String    @map("encrypted_key") // AES-256 encrypted API key
-  keyName      String?   @map("key_name") // Optional user-friendly name for the key
+  keyName      String    @default("Default") @map("key_name") // User-friendly name for the key
   isActive     Boolean   @default(true) @map("is_active") // Whether this key should be used
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
