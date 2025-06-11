@@ -18,8 +18,7 @@ export interface ConversationNodeData extends Record<string, unknown> {
   onCreateBranch?: (nodeId: string) => void;
 }
 
-export const ConversationNode = memo(({ data, selected }: NodeProps) => {
-  const nodeData = data as unknown as ConversationNodeData;
+export const ConversationNode = memo(({ data, selected }: NodeProps & { data: ConversationNodeData }) => {
   const {
     role,
     content,
@@ -28,7 +27,7 @@ export const ConversationNode = memo(({ data, selected }: NodeProps) => {
     nodeType,
     onResumeConversation,
     onCreateBranch,
-  } = nodeData;
+  } = data;
 
   const isUser = role === "user";
   const truncatedContent =
@@ -92,7 +91,7 @@ export const ConversationNode = memo(({ data, selected }: NodeProps) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onResumeConversation?.(nodeData.id)}
+              onClick={() => onResumeConversation?.(data.id)}
               className="flex-1"
             >
               <Play className="h-3 w-3 mr-1" />
@@ -102,7 +101,7 @@ export const ConversationNode = memo(({ data, selected }: NodeProps) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onCreateBranch?.(nodeData.id)}
+              onClick={() => onCreateBranch?.(data.id)}
             >
               <Plus className="h-3 w-3" />
             </Button>
