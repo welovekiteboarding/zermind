@@ -87,15 +87,44 @@ export function MindMapView({
   const [reactFlowNodes, setNodes, onNodesChange] = useNodesState(nodes);
   const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState(edges);
 
-  // Update nodes when messages change
+  // Update nodes when messages change - preserve user-dragged positions
   React.useEffect(() => {
-    setNodes(nodes);
-  }, [nodes, setNodes]);
+    const currentNodeIds = new Set(reactFlowNodes.map(node => node.id));
+    const newNodeIds = new Set(nodes.map(node => node.id));
+    
+    // Check if there are actual changes (additions or removals)
+    const hasChanges = 
+      currentNodeIds.size !== newNodeIds.size ||
+      [...currentNodeIds].some(id => !newNodeIds.has(id)) ||
+      [...newNodeIds].some(id => !currentNodeIds.has(id));
+    
+    if (hasChanges) {
+      // Merge new nodes with existing positions to preserve user-dragged positions
+      const updatedNodes = nodes.map(newNode => {
+        const existingNode = reactFlowNodes.find(n => n.id === newNode.id);
+        return existingNode 
+          ? { ...newNode, position: existingNode.position }
+          : newNode;
+      });
+      setNodes(updatedNodes);
+    }
+  }, [nodes, reactFlowNodes, setNodes]);
 
-  // Update edges when messages change
+  // Update edges when messages change - only update if there are actual changes
   React.useEffect(() => {
-    setEdges(edges);
-  }, [edges, setEdges]);
+    const currentEdgeIds = new Set(reactFlowEdges.map(edge => edge.id));
+    const newEdgeIds = new Set(edges.map(edge => edge.id));
+    
+    // Check if there are actual changes (additions or removals)
+    const hasChanges = 
+      currentEdgeIds.size !== newEdgeIds.size ||
+      [...currentEdgeIds].some(id => !newEdgeIds.has(id)) ||
+      [...newEdgeIds].some(id => !currentEdgeIds.has(id));
+    
+    if (hasChanges) {
+      setEdges(edges);
+    }
+  }, [edges, reactFlowEdges, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
