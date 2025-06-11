@@ -166,7 +166,7 @@ export default function TermsOfUse() {
                 <p>
                   Zermind is licensed under the MIT License. The source code is available on{" "}
                   <a
-                    href="https://github.com/ugouwakwe/zermind"
+                    href="https://github.com/okikeSolutions/zermind"
                     className="text-primary hover:text-primary/80 transition-colors"
                   >
                     GitHub
