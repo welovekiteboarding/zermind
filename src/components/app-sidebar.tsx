@@ -52,6 +52,7 @@ import {
   useDeleteChat,
 } from "@/hooks/use-chats-query";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
+import Link from "next/link";
 
 const navigationItems = [
   {
@@ -195,10 +196,10 @@ export function AppSidebar() {
                 {navigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
