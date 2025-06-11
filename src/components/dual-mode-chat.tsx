@@ -17,7 +17,7 @@ interface Message {
   branchName?: string;
   xPosition?: number;
   yPosition?: number;
-  createdAt: Date;
+  createdAt: string;
 }
 
 interface DualModeChatProps {
@@ -162,6 +162,7 @@ export function DualModeChat({
           initialMessages={initialMessages.map((msg) => ({
             ...msg,
             role: msg.role as "user" | "assistant",
+            createdAt: new Date(msg.createdAt),
             attachments: [],
           }))}
           userId={userId}

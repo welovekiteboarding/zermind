@@ -35,7 +35,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
           ...msg,
           role: msg.role as "user" | "assistant",
           model: msg.model || undefined,
-          createdAt: msg.createdAt,
+          createdAt: msg.createdAt.toISOString(),
         }))}
         userId={userData.user.id}
         chatTitle={chatData.title || undefined}
