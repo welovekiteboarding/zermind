@@ -18,7 +18,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConversationNode } from "./mind-map-node";
+import { ConversationNode, ConversationNodeData } from "./mind-map-node";
 import { Brain, GitBranch, Plus } from "lucide-react";
 
 interface Message {
@@ -49,7 +49,7 @@ export function MindMapView({
   onCreateBranch,
 }: MindMapViewProps) {
   // Convert messages to React Flow nodes
-  const nodes: Node[] = useMemo(() => {
+  const nodes: Node<ConversationNodeData>[] = useMemo(() => {
     return messages.map((message, index) => ({
       id: message.id,
       type: "conversationNode",
