@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type ChatMode = 'chat' | 'mind';
 
@@ -18,6 +18,7 @@ export const useChatModeStore = create<ChatModeStore>()(
     }),
     {
       name: 'chat-mode-storage',
+      storage: createJSONStorage(() => localStorage),
     }
   )
 ); 
