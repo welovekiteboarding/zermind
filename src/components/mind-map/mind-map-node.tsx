@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bot, User, Plus, GitBranch, Play } from "lucide-react";
 
-export interface ConversationNodeData {
+export interface ConversationNodeData extends Record<string, unknown> {
   id: string;
   role: "user" | "assistant";
   content: string;
