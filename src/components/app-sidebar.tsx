@@ -35,12 +35,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeSwitcher } from "./theme-switcher";
-import { useUserChats, useCreateChat, useDeleteChat } from "@/hooks/use-chats-query";
+import {
+  useUserChats,
+  useCreateChat,
+  useDeleteChat,
+} from "@/hooks/use-chats-query";
+import { useChatModeStore } from "@/lib/store/chat-mode-store";
 
 const navigationItems = [
   {
@@ -64,10 +75,13 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
-  const [isMindMode, setIsMindMode] = useState(false);
+  const { mode, setMode } = useChatModeStore();
+  const isMindMode = mode === "mind";
 
   // React Query hooks
-  const { data: chatSessions = [], isLoading } = useUserChats(userId || undefined);
+  const { data: chatSessions = [], isLoading } = useUserChats(
+    userId || undefined
+  );
   const createChatMutation = useCreateChat();
   const deleteChatMutation = useDeleteChat();
 
@@ -105,8 +119,8 @@ export function AppSidebar() {
     if (!userId) return;
 
     try {
-      const newChat = await createChatMutation.mutateAsync({ 
-        title: "New Chat" 
+      const newChat = await createChatMutation.mutateAsync({
+        title: "New Chat",
       });
 
       // Navigate to the new chat
@@ -121,7 +135,7 @@ export function AppSidebar() {
 
     try {
       await deleteChatMutation.mutateAsync(chatId);
-      
+
       // Check if we're currently viewing the deleted chat
       if (pathname === `/protected/chat/${chatId}`) {
         // Navigate to home page when the current chat is deleted
@@ -144,7 +158,7 @@ export function AppSidebar() {
     return date.toLocaleDateString();
   };
 
-  const getChatDisplayInfo = (chat: typeof chatSessions[0]) => {
+  const getChatDisplayInfo = (chat: (typeof chatSessions)[0]) => {
     const title = chat.title || "New Chat";
     const lastMessage = chat.messages[0]?.content || "No messages yet";
     const truncatedMessage =
@@ -226,7 +240,9 @@ export function AppSidebar() {
                           >
                             <MessageSquare className="h-4 w-4" />
                             <div className="flex-1 overflow-hidden">
-                              <div className="truncate font-medium">{title}</div>
+                              <div className="truncate font-medium">
+                                {title}
+                              </div>
                               <div className="text-xs text-muted-foreground">
                                 {formatDate(chat.updatedAt)}
                               </div>
@@ -262,59 +278,60 @@ export function AppSidebar() {
 
       {/* Mode Switcher */}
       <SidebarGroup>
-          <SidebarGroupContent>
-            <div className="px-2">
-              <Card className="border-dashed">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    {isMindMode ? (
-                      <>
-                        <Brain className="h-4 w-4 text-purple-500" />
-                        Mind Mode
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquare className="h-4 w-4 text-blue-500" />
-                        Chat Mode
-                      </>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    {isMindMode 
-                      ? "Visualize conversations as interactive mind maps with branching dialogues" 
-                      : "Traditional linear chat interface for straightforward conversations"
+        <SidebarGroupContent>
+          <div className="px-2">
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  {isMindMode ? (
+                    <>
+                      <Brain className="h-4 w-4 text-purple-500" />
+                      Mind Mode
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      Chat Mode
+                    </>
+                  )}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {isMindMode
+                    ? "Visualize conversations as interactive mind maps with branching dialogues"
+                    : "Traditional linear chat interface for straightforward conversations"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MessageSquare className="h-3 w-3" />
+                    <span>Chat</span>
+                  </div>
+                  <Switch
+                    checked={isMindMode}
+                    onCheckedChange={(checked) =>
+                      setMode(checked ? "mind" : "chat")
                     }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <MessageSquare className="h-3 w-3" />
-                      <span>Chat</span>
-                    </div>
-                    <Switch
-                      checked={isMindMode}
-                      onCheckedChange={setIsMindMode}
-                      className="data-[state=checked]:bg-purple-500"
-                    />
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Brain className="h-3 w-3" />
-                      <span>Mind</span>
+                    className="data-[state=checked]:bg-purple-500"
+                  />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Brain className="h-3 w-3" />
+                    <span>Mind</span>
+                  </div>
+                </div>
+                {isMindMode && (
+                  <div className="mt-3 p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                    <div className="flex items-center gap-1 text-xs text-purple-700 dark:text-purple-300">
+                      <GitBranch className="h-3 w-3" />
+                      <span>Branch conversations with multiple AI models</span>
                     </div>
                   </div>
-                  {isMindMode && (
-                    <div className="mt-3 p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                      <div className="flex items-center gap-1 text-xs text-purple-700 dark:text-purple-300">
-                        <GitBranch className="h-3 w-3" />
-                        <span>Branch conversations with multiple AI models</span>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </SidebarGroupContent>
+      </SidebarGroup>
 
       <SidebarFooter className="border-t">
         <SidebarMenu>
