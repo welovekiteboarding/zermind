@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { BarChart3, Activity, Calendar } from 'lucide-react';
-import { type UsageStats } from '@/lib/schemas/usage';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, Activity, Calendar } from "lucide-react";
+import { type UsageStats } from "@/lib/schemas/usage";
 
 export default function UsagePage() {
   const [stats, setStats] = useState<UsageStats | null>(null);
@@ -14,14 +20,16 @@ export default function UsagePage() {
   useEffect(() => {
     const fetchUsageStats = async () => {
       try {
-        const response = await fetch('/api/usage');
+        const response = await fetch("/api/usage");
         if (!response.ok) {
-          throw new Error('Failed to fetch usage statistics');
+          throw new Error("Failed to fetch usage statistics");
         }
         const data = await response.json();
         setStats(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load usage statistics');
+        setError(
+          err instanceof Error ? err.message : "Failed to load usage statistics"
+        );
       } finally {
         setLoading(false);
       }
@@ -90,27 +98,33 @@ export default function UsagePage() {
     );
   }
 
-  const modelEntries = Object.entries(stats.modelUsage).sort(([,a], [,b]) => b - a);
+  const modelEntries = Object.entries(stats.modelUsage).sort(
+    ([, a], [, b]) => b - a
+  );
   const dailyEntries = Object.entries(stats.dailyUsage)
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 7); // Last 7 days
 
   const formatModelName = (model: string) => {
-    return model.replace('openai/', '').replace('anthropic/', '').replace('meta-llama/', '').replace('google/', '');
+    return model
+      .replace("openai/", "")
+      .replace("anthropic/", "")
+      .replace("meta-llama/", "")
+      .replace("google/", "");
   };
 
   const getModelProvider = (model: string) => {
-    if (model.startsWith('openai/')) return 'OpenAI';
-    if (model.startsWith('anthropic/')) return 'Anthropic';
-    if (model.startsWith('meta-llama/')) return 'Meta';
-    if (model.startsWith('google/')) return 'Google';
-    return 'Unknown';
+    if (model.startsWith("openai/")) return "OpenAI";
+    if (model.startsWith("anthropic/")) return "Anthropic";
+    if (model.startsWith("meta-llama/")) return "Meta";
+    if (model.startsWith("google/")) return "Google";
+    return "Unknown";
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -125,7 +139,9 @@ export default function UsagePage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Requests
+            </CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -143,22 +159,20 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{modelEntries.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Different AI models
-            </p>
+            <p className="text-xs text-muted-foreground">Different AI models</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Recent Activity
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dailyEntries.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Active days tracked
-            </p>
+            <p className="text-xs text-muted-foreground">Active days tracked</p>
           </CardContent>
         </Card>
       </div>
@@ -168,9 +182,9 @@ export default function UsagePage() {
         <Card>
           <CardHeader>
             <CardTitle>Model Usage</CardTitle>
-                         <CardDescription>
-               AI models you&apos;ve used and request counts
-             </CardDescription>
+            <CardDescription>
+              AI models you&apos;ve used and request counts
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -185,7 +199,9 @@ export default function UsagePage() {
                     <div key={model} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{formatModelName(model)}</span>
+                          <span className="font-medium">
+                            {formatModelName(model)}
+                          </span>
                           <Badge variant="secondary" className="text-xs">
                             {getModelProvider(model)}
                           </Badge>
@@ -224,7 +240,7 @@ export default function UsagePage() {
                 </p>
               ) : (
                 dailyEntries.map(([date, count]) => {
-                  const maxCount = Math.max(...dailyEntries.map(([,c]) => c));
+                  const maxCount = Math.max(...dailyEntries.map(([, c]) => c));
                   const percentage = (count / maxCount) * 100;
                   return (
                     <div key={date} className="space-y-2">
@@ -250,4 +266,4 @@ export default function UsagePage() {
       </div>
     </div>
   );
-} 
+}

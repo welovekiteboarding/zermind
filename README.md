@@ -115,3 +115,12 @@ See [docs/byok-implementation.md](docs/byok-implementation.md) for detailed secu
 
 MIT – use it freely, contribute back if you like.
 Zermind was built with ❤️ for the [Cloneathon 2025](https://cloneathon.t3.chat) challenge.
+
+
+## 💜 Support Zermind
+
+Zermind is an open-source multi-LLM chat app, built solo with love and limited LLM credits.
+
+If you find it useful or want to support its development, consider sponsoring here:
+
+👉 [GitHub Sponsors – okikeSolutions](https://github.com/sponsors/okikeSolutions)

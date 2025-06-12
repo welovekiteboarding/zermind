@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ChatConversation } from "@/components/chat-conversation";
-import { ChatHeader } from "@/components/chat-header";
+import { DualModeChat } from "@/components/dual-mode-chat";
 import { getChatWithMessages } from "@/lib/db/chats";
 
 interface ChatPageProps {
@@ -30,26 +29,17 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Dynamic Chat Header */}
-      <ChatHeader
+      <DualModeChat
         chatId={id}
+        initialMessages={chatData.messages.map((msg) => ({
+          ...msg,
+          role: msg.role as "user" | "assistant",
+          model: msg.model || undefined,
+          createdAt: msg.createdAt.toISOString(),
+        }))}
         userId={userData.user.id}
-        initialTitle={chatData.title}
-        initialUpdatedAt={chatData.updatedAt}
+        chatTitle={chatData.title || undefined}
       />
-
-      {/* Chat Interface */}
-      <div className="flex-1 overflow-hidden">
-        <ChatConversation
-          chatId={id}
-          initialMessages={chatData.messages.map((msg) => ({
-            ...msg,
-            role: msg.role as "user" | "assistant",
-          }))}
-          userId={userData.user.id}
-          chatTitle={chatData.title || undefined}
-        />
-      </div>
     </div>
   );
 }

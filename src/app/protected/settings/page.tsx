@@ -58,11 +58,14 @@ export default async function SettingsPage() {
               </label>
               <p className="text-sm bg-muted px-3 py-2 rounded-md">
                 {data?.user?.created_at
-                  ? new Date(data.user.created_at).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })
+                  ? new Date(data.user.created_at).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      }
+                    )
                   : "Unknown"}
               </p>
             </div>
@@ -73,10 +76,14 @@ export default async function SettingsPage() {
               <div className="flex items-center gap-2 mt-1">
                 <Badge
                   variant={
-                    data?.user?.email_confirmed_at ? "secondary" : "destructive"
+                    data?.user?.email_confirmed_at
+                      ? "secondary"
+                      : "destructive"
                   }
                 >
-                  {data?.user?.email_confirmed_at ? "Verified" : "Not Verified"}
+                  {data?.user?.email_confirmed_at
+                    ? "Verified"
+                    : "Not Verified"}
                 </Badge>
               </div>
             </div>
@@ -91,18 +98,20 @@ export default async function SettingsPage() {
             <Settings className="h-5 w-5" />
             Chat Preferences & API Keys
           </CardTitle>
-          <CardDescription>Customize your chat experience and manage your API keys</CardDescription>
+          <CardDescription>
+            Customize your chat experience and manage your API keys
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* API Key Management */}
           <ApiKeyManagement />
-          
+
           {/* Other Chat Preferences */}
           <div className="pt-6 border-t">
             <h4 className="font-medium mb-3">Other Preferences</h4>
             <div className="text-sm text-muted-foreground">
-              Additional chat preferences will be implemented in future updates. This will
-              include:
+              Additional chat preferences will be implemented in future
+              updates. This will include:
             </div>
             <ul className="text-sm space-y-2 ml-4 mt-2">
               <li>• Default AI model selection</li>
@@ -150,8 +159,8 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Data management features will be implemented in future updates. This
-            will include:
+            Data management features will be implemented in future updates.
+            This will include:
           </div>
           <ul className="text-sm space-y-2 ml-4">
             <li>• Chat history export</li>
