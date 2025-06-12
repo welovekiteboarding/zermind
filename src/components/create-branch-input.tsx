@@ -80,11 +80,9 @@ export function CreateBranchInput({
   } = useConversationContext(chatId, parentNodeId);
 
   const {
-    input,
     messages,
     isLoading,
     error,
-    handleInputChange,
     handleSubmit,
     stop,
   } = useBranchingChat({
@@ -102,21 +100,21 @@ export function CreateBranchInput({
     if (!data.message.trim() || isLoading) return;
 
     try {
-      // First update the input state in the hook
-      const syntheticEvent = {
-        target: { value: data.message.trim() },
-      } as React.ChangeEvent<HTMLInputElement>;
-
-      handleInputChange(syntheticEvent);
-
-      // Then submit after a small delay to ensure state is updated
-      setTimeout(() => {
-        const mockEvent = {
-          preventDefault: () => {},
-          type: "submit",
-        } as React.FormEvent<HTMLFormElement>;
-        handleSubmit(mockEvent);
-      }, 0);
+      // Create a synthetic event with the form data
+      const mockEvent = {
+        preventDefault: () => {},
+        type: "submit",
+        target: {
+          elements: {
+            message: { value: data.message.trim() },
+          },
+        },
+      } as unknown as React.FormEvent<HTMLFormElement>;
+      
+      handleSubmit(mockEvent);
+      
+      // Reset form after submission
+      form.reset();
     } catch (error) {
       console.error("Error submitting branch:", error);
     }
@@ -300,11 +298,6 @@ export function CreateBranchInput({
                         placeholder="Start the new branch with a different question or approach..."
                         disabled={isLoading}
                         {...field}
-                        value={input} // Keep sync with useBranchingChat input
-                        onChange={(e) => {
-                          field.onChange(e);
-                          handleInputChange(e); // Keep useBranchingChat in sync
-                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
