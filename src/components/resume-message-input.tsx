@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Send, StopCircle, AlertCircle, User, Bot } from "lucide-react";
 import { useBranchingChat } from "@/hooks/use-branching-chat";
-import { type Message } from "@/lib/schemas/chat";
+import { useConversationContext } from "@/hooks/use-conversation-context";
 import { ModelSelector } from "@/components/model-selector";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,10 +43,7 @@ export function ResumeMessageInput({
   onClose,
   onMessageSent,
 }: ResumeMessageInputProps) {
-  const [context, setContext] = useState<Message[]>([]);
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4o-mini");
-  const [isLoadingContext, setIsLoadingContext] = useState(true);
-  const [contextError, setContextError] = useState<string | null>(null);
 
   // Form setup
   const form = useForm<MessageFormData>({
@@ -56,43 +53,12 @@ export function ResumeMessageInput({
     },
   });
 
-  // Fetch conversation context for the node
-  useEffect(() => {
-    const fetchContext = async () => {
-      try {
-        const response = await fetch(
-          `/api/chats/${chatId}/context/${parentNodeId}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch conversation context");
-        }
-        const data = await response.json();
-        setContext(
-          data.context.map(
-            (msg: {
-              id: string;
-              role: string;
-              content: string;
-              model: string | null;
-              createdAt: string;
-            }) => ({
-              ...msg,
-              role: msg.role as "user" | "assistant",
-              createdAt: new Date(msg.createdAt),
-              attachments: [],
-            })
-          )
-        );
-      } catch (error) {
-        console.error("Error fetching context:", error);
-        setContextError("Failed to load conversation context");
-      } finally {
-        setIsLoadingContext(false);
-      }
-    };
-
-    fetchContext();
-  }, [chatId, parentNodeId]);
+  // Fetch conversation context
+  const {
+    data: context = [],
+    isLoading: isLoadingContext,
+    error: contextError,
+  } = useConversationContext(chatId, parentNodeId);
 
   const {
     input,
@@ -159,7 +125,7 @@ export function ResumeMessageInput({
         <CardContent className="p-4">
           <div className="flex items-center space-x-2 text-destructive">
             <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{contextError}</span>
+            <span className="text-sm">{contextError.message}</span>
             <Button size="sm" variant="outline" onClick={onClose}>
               Close
             </Button>

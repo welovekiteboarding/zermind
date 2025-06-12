@@ -1,0 +1,54 @@
+import { useQuery } from "@tanstack/react-query";
+import { type Message } from "@/lib/schemas/chat";
+
+// Query Keys
+export const conversationContextKeys = {
+  all: ["conversationContext"] as const,
+  context: (chatId: string, parentNodeId: string) =>
+    [...conversationContextKeys.all, chatId, parentNodeId] as const,
+} as const;
+
+// API Function
+async function fetchConversationContext(
+  chatId: string,
+  parentNodeId: string
+): Promise<Message[]> {
+  const response = await fetch(`/api/chats/${chatId}/context/${parentNodeId}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch conversation context");
+  }
+
+  const data = await response.json();
+
+  // Transform the data to match Message schema
+  return data.context.map(
+    (msg: {
+      id: string;
+      role: string;
+      content: string;
+      model: string | null;
+      createdAt: string;
+    }) => ({
+      ...msg,
+      role: msg.role as "user" | "assistant",
+      createdAt: new Date(msg.createdAt),
+      attachments: [],
+    })
+  );
+}
+
+// Hook
+export function useConversationContext(
+  chatId: string | undefined,
+  parentNodeId: string | undefined
+) {
+  return useQuery({
+    queryKey: conversationContextKeys.context(chatId || "", parentNodeId || ""),
+    queryFn: () => fetchConversationContext(chatId!, parentNodeId!),
+    enabled: !!chatId && !!parentNodeId,
+    staleTime: 5 * 60 * 1000, // 5 minutes - context doesn't change often
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+}
