@@ -126,25 +126,33 @@ export async function addMessage(
   model?: string,
   parentId?: string
 ) {
-  // Also update the chat's updatedAt timestamp
-  await prisma.chat.update({
-    where: {
-      id: chatId,
-    },
-    data: {
-      updatedAt: new Date(),
-    },
-  });
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // Update the chat's updatedAt timestamp
+      await tx.chat.update({
+        where: {
+          id: chatId,
+        },
+        data: {
+          updatedAt: new Date(),
+        },
+      });
 
-  return await prisma.message.create({
-    data: {
-      chatId,
-      role,
-      content,
-      model,
-      parentId,
-    },
-  });
+      // Create the message
+      return await tx.message.create({
+        data: {
+          chatId,
+          role,
+          content,
+          model,
+          parentId,
+        },
+      });
+    });
+  } catch (error) {
+    console.error("Failed to add message:", error);
+    throw new Error("Failed to add message to chat");
+  }
 }
 
 // Add a new function specifically for branching messages
@@ -156,26 +164,34 @@ export async function addBranchingMessage(
   model?: string,
   branchName?: string
 ) {
-  // Update the chat's updatedAt timestamp
-  await prisma.chat.update({
-    where: {
-      id: chatId,
-    },
-    data: {
-      updatedAt: new Date(),
-    },
-  });
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // Update the chat's updatedAt timestamp
+      await tx.chat.update({
+        where: {
+          id: chatId,
+        },
+        data: {
+          updatedAt: new Date(),
+        },
+      });
 
-  return await prisma.message.create({
-    data: {
-      chatId,
-      parentId,
-      role,
-      content,
-      model,
-      branchName,
-    },
-  });
+      // Create the branching message
+      return await tx.message.create({
+        data: {
+          chatId,
+          parentId,
+          role,
+          content,
+          model,
+          branchName,
+        },
+      });
+    });
+  } catch (error) {
+    console.error("Failed to add branching message:", error);
+    throw new Error("Failed to add branching message to chat");
+  }
 }
 
 // Get conversation context up to a specific node (for resuming)
