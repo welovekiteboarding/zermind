@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { addMessage, addBranchingMessage } from "@/lib/db/chats";
 import { CreateMessageSchema, ErrorResponseSchema } from "@/lib/schemas/chat";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 
 // Extended schema for branching messages
 const CreateBranchingMessageSchema = CreateMessageSchema.extend({
@@ -66,7 +66,7 @@ export async function POST(
     console.error("Error saving message:", error);
 
     // Handle Zod validation errors
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof ZodError) {
       const errorResponse = ErrorResponseSchema.parse({
         error: "Invalid request data",
       });
