@@ -20,7 +20,7 @@ import {
   Network,
   Users,
   Share2,
-  Map,
+  Map as MapIcon,
   Eye,
   RefreshCw,
 } from "lucide-react";
@@ -193,7 +193,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
             <CardContent className="p-6 text-center space-y-3">
               <div className="relative">
-                <Map className="h-12 w-12 text-primary mx-auto" />
+                <MapIcon className="h-12 w-12 text-primary mx-auto" />
               </div>
               <h3 className="font-bold text-lg">Mind Mode</h3>
               <p className="text-sm text-muted-foreground">
