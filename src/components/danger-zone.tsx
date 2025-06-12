@@ -26,16 +26,20 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
-import { 
-  useDeleteAccount, 
-  useExportData, 
-  useAccountStats 
+import {
+  useDeleteAccount,
+  useExportData,
+  useAccountStats,
 } from "@/hooks/use-account";
 
-interface DeleteFormData {
-  confirmation: string;
-}
+const deleteAccountSchema = z.object({
+  confirmation: z.string().min(1, "Please enter the confirmation text"),
+});
+
+type DeleteFormData = z.infer<typeof deleteAccountSchema>;
 
 interface DangerZoneProps {
   className?: string;
@@ -52,6 +56,7 @@ export function DangerZone({ className }: DangerZoneProps) {
 
   // Form for delete confirmation
   const deleteForm = useForm<DeleteFormData>({
+    resolver: zodResolver(deleteAccountSchema),
     defaultValues: {
       confirmation: "",
     },
@@ -63,26 +68,33 @@ export function DangerZone({ className }: DangerZoneProps) {
       toast.success("Data export started! Your download should begin shortly.");
       setIsExportDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to export data");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to export data"
+      );
     }
   };
 
   const handleDeleteAccount = async (data: DeleteFormData) => {
     // Validate that the confirmation text is correct
-    if (data.confirmation !== "DELETE MY ACCOUNT") {
-      toast.error("Please type 'DELETE MY ACCOUNT' exactly to confirm");
+    if (data.confirmation.trim() !== "DELETE MY ACCOUNT") {
+      deleteForm.setError("confirmation", {
+        type: "manual",
+        message: "Please type 'DELETE MY ACCOUNT' exactly to confirm",
+      });
       return;
     }
 
     try {
-      const result = await deleteAccountMutation.mutateAsync({ 
-        confirmation: "DELETE MY ACCOUNT" 
+      const result = await deleteAccountMutation.mutateAsync({
+        confirmation: "DELETE MY ACCOUNT",
       });
       toast.success(result.message);
       setIsDeleteDialogOpen(false);
       // The useDeleteAccount hook handles redirection
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete account");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete account"
+      );
     }
   };
 
@@ -99,11 +111,12 @@ export function DangerZone({ className }: DangerZoneProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-      <Alert className="border-destructive/50 bg-destructive/10">
+        <Alert className="border-destructive/50 bg-destructive/10">
           <Shield className="h-4 w-4" />
           <AlertDescription>
-            <strong>Think carefully!</strong> Actions in this section are permanent and cannot be undone.
-            We recommend exporting your data before making any irreversible changes.
+            <strong>Think carefully!</strong> Actions in this section are
+            permanent and cannot be undone. We recommend exporting your data
+            before making any irreversible changes.
           </AlertDescription>
         </Alert>
 
@@ -113,28 +126,36 @@ export function DangerZone({ className }: DangerZoneProps) {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <MessageSquare className="h-4 w-4 text-primary" />
-                <span className="text-2xl font-bold text-primary">{formatNumber(stats.chats)}</span>
+                <span className="text-2xl font-bold text-primary">
+                  {formatNumber(stats.chats)}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">Chats</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Database className="h-4 w-4 text-primary" />
-                <span className="text-2xl font-bold text-primary">{formatNumber(stats.messages)}</span>
+                <span className="text-2xl font-bold text-primary">
+                  {formatNumber(stats.messages)}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">Messages</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Key className="h-4 w-4 text-primary" />
-                <span className="text-2xl font-bold text-primary">{formatNumber(stats.apiKeys)}</span>
+                <span className="text-2xl font-bold text-primary">
+                  {formatNumber(stats.apiKeys)}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">API Keys</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <BarChart3 className="h-4 w-4 text-primary" />
-                <span className="text-2xl font-bold text-primary">{formatNumber(stats.usageLogs)}</span>
+                <span className="text-2xl font-bold text-primary">
+                  {formatNumber(stats.usageLogs)}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground">Usage Logs</p>
             </div>
@@ -150,7 +171,10 @@ export function DangerZone({ className }: DangerZoneProps) {
                 Download a copy of all your data before deletion
               </p>
             </div>
-            <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+            <Dialog
+              open={isExportDialogOpen}
+              onOpenChange={setIsExportDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
@@ -161,31 +185,34 @@ export function DangerZone({ className }: DangerZoneProps) {
                 <DialogHeader>
                   <DialogTitle>Export Your Data</DialogTitle>
                   <DialogDescription>
-                    This will download a JSON file containing all your chats, messages, 
-                    API key metadata (not the actual keys), and usage statistics.
+                    This will download a JSON file containing all your chats,
+                    messages, API key metadata (not the actual keys), and usage
+                    statistics.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <Alert>
                     <Download className="h-4 w-4" />
                     <AlertDescription>
-                      The exported file will be named with today&apos;s date and can be used 
-                      to backup your data or import it elsewhere.
+                      The exported file will be named with today&apos;s date and
+                      can be used to backup your data or import it elsewhere.
                     </AlertDescription>
                   </Alert>
                 </div>
                 <DialogFooter>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setIsExportDialogOpen(false)}
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleExportData}
                     disabled={exportDataMutation.isPending}
                   >
-                    {exportDataMutation.isPending ? "Exporting..." : "Download Export"}
+                    {exportDataMutation.isPending
+                      ? "Exporting..."
+                      : "Download Export"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -202,7 +229,10 @@ export function DangerZone({ className }: DangerZoneProps) {
                 Permanently delete your account and all associated data
               </p>
             </div>
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <Dialog
+              open={isDeleteDialogOpen}
+              onOpenChange={setIsDeleteDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button variant="destructive" size="sm">
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -211,10 +241,12 @@ export function DangerZone({ className }: DangerZoneProps) {
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-destructive">Delete Account</DialogTitle>
+                  <DialogTitle className="text-destructive">
+                    Delete Account
+                  </DialogTitle>
                   <DialogDescription>
-                    This action cannot be undone. This will permanently delete your 
-                    account and remove all your data from our servers.
+                    This action cannot be undone. This will permanently delete
+                    your account and remove all your data from our servers.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -232,10 +264,17 @@ export function DangerZone({ className }: DangerZoneProps) {
                     </AlertDescription>
                   </Alert>
 
-                  <form onSubmit={deleteForm.handleSubmit(handleDeleteAccount)} className="space-y-4">
+                  <form
+                    onSubmit={deleteForm.handleSubmit(handleDeleteAccount)}
+                    className="space-y-4"
+                  >
                     <div>
                       <label className="text-sm font-medium">
-                        Type <Badge variant="destructive" className="mx-1">DELETE MY ACCOUNT</Badge> to confirm:
+                        Type{" "}
+                        <Badge variant="destructive" className="mx-1">
+                          DELETE MY ACCOUNT
+                        </Badge>{" "}
+                        to confirm:
                       </label>
                       <Input
                         {...deleteForm.register("confirmation")}
@@ -250,9 +289,9 @@ export function DangerZone({ className }: DangerZoneProps) {
                     </div>
 
                     <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-                      <Button 
+                      <Button
                         type="button"
-                        variant="outline" 
+                        variant="outline"
                         onClick={() => {
                           setIsDeleteDialogOpen(false);
                           deleteForm.reset();
@@ -261,16 +300,19 @@ export function DangerZone({ className }: DangerZoneProps) {
                       >
                         Cancel
                       </Button>
-                      <Button 
+                      <Button
                         type="submit"
                         variant="destructive"
                         disabled={
-                          deleteAccountMutation.isPending || 
+                          deleteAccountMutation.isPending ||
                           !deleteForm.watch("confirmation") ||
-                          deleteForm.watch("confirmation") !== "DELETE MY ACCOUNT"
+                          deleteForm.watch("confirmation") !==
+                            "DELETE MY ACCOUNT"
                         }
                       >
-                        {deleteAccountMutation.isPending ? "Deleting..." : "Delete My Account"}
+                        {deleteAccountMutation.isPending
+                          ? "Deleting..."
+                          : "Delete My Account"}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -295,4 +337,4 @@ export function DangerZone({ className }: DangerZoneProps) {
       </CardContent>
     </Card>
   );
-} 
+}
