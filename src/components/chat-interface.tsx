@@ -221,6 +221,13 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           >
             Imprint
           </Link>
+          {" • "}
+          <Link
+            href="https://github.com/sponsors/okikeSolutions"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+          >
+            Support Zermind
+          </Link>
         </p>
       </div>
     </div>
