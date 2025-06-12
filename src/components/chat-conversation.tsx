@@ -108,8 +108,6 @@ export function ChatConversation({
 
   const {
     messages,
-    input,
-    handleInputChange,
     isLoading,
     error,
     stop,
@@ -579,11 +577,6 @@ export function ChatConversation({
                         placeholder="Type your message..."
                         disabled={isLoading}
                         {...field}
-                        value={input} // Keep sync with useChat input
-                        onChange={(e) => {
-                          field.onChange(e);
-                          handleInputChange(e); // Keep useChat in sync
-                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
