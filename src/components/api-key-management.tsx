@@ -64,8 +64,7 @@ const addApiKeySchema = z.object({
   apiKey: z
     .string()
     .min(1, "API key is required")
-    .min(10, "API key seems too short")
-    .regex(/^[A-Za-z0-9\-_.]+$/, "API key contains invalid characters"),
+    .min(10, "API key seems too short"),
 });
 
 type AddApiKeyFormData = z.infer<typeof addApiKeySchema>;
@@ -113,7 +112,9 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
       setIsAddDialogOpen(false);
       form.reset();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Failed to add API key");
+      setFormError(
+        err instanceof Error ? err.message : "Failed to add API key"
+      );
     }
   };
 
@@ -211,14 +212,20 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
             </DialogHeader>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleAddApiKey)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(handleAddApiKey)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="provider"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Provider</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a provider" />
@@ -226,9 +233,14 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                         </FormControl>
                         <SelectContent>
                           {providers.map((provider) => (
-                            <SelectItem key={provider.value} value={provider.value}>
+                            <SelectItem
+                              key={provider.value}
+                              value={provider.value}
+                            >
                               <div>
-                                <div className="font-medium">{provider.label}</div>
+                                <div className="font-medium">
+                                  {provider.label}
+                                </div>
                                 <div className="text-xs text-muted-foreground">
                                   {provider.description}
                                 </div>
@@ -310,8 +322,13 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={createApiKeyMutation.isPending}>
-                    {createApiKeyMutation.isPending ? "Adding..." : "Add API Key"}
+                  <Button
+                    type="submit"
+                    disabled={createApiKeyMutation.isPending}
+                  >
+                    {createApiKeyMutation.isPending
+                      ? "Adding..."
+                      : "Add API Key"}
                   </Button>
                 </DialogFooter>
               </form>
