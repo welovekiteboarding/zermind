@@ -13,7 +13,11 @@ async function fetchConversationContext(
   chatId: string,
   parentNodeId: string
 ): Promise<Message[]> {
-  const response = await fetch(`/api/chats/${chatId}/context/${parentNodeId}`);
+  const response = await fetch(
+    `/api/chats/${encodeURIComponent(chatId)}/context/${encodeURIComponent(
+      parentNodeId
+    )}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch conversation context");
@@ -31,7 +35,10 @@ async function fetchConversationContext(
       createdAt: string;
     }) => ({
       ...msg,
-      role: msg.role as "user" | "assistant",
+      role:
+        msg.role === "user" || msg.role === "assistant"
+          ? msg.role
+          : "assistant",
       createdAt: new Date(msg.createdAt),
       attachments: [],
     })
