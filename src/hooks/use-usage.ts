@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type UsageStats } from "@/lib/schemas/usage";
+import { type UsageStats, UsageStatsSchema } from "@/lib/schemas/usage";
 
 export function useUsageStats() {
   return useQuery<UsageStats, Error>({
@@ -14,7 +14,7 @@ export function useUsageStats() {
       }
 
       const data = await response.json();
-      return data;
+      return UsageStatsSchema.parse(data);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes - usage stats don't change frequently
     gcTime: 15 * 60 * 1000, // 15 minutes
