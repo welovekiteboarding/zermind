@@ -60,15 +60,7 @@ export function ResumeMessageInput({
     error: contextError,
   } = useConversationContext(chatId, parentNodeId);
 
-  const {
-    input,
-    messages,
-    isLoading,
-    error,
-    handleInputChange,
-    handleSubmit,
-    stop,
-  } = useBranchingChat({
+  const { messages, isLoading, error, handleSubmit, stop } = useBranchingChat({
     chatId,
     parentNodeId,
     initialContext: context,
@@ -82,21 +74,21 @@ export function ResumeMessageInput({
     if (!data.message.trim() || isLoading) return;
 
     try {
-      // First update the input state in the hook
-      const syntheticEvent = {
-        target: { value: data.message.trim() },
-      } as React.ChangeEvent<HTMLInputElement>;
+      // Create a synthetic event with the form data
+      const mockEvent = {
+        preventDefault: () => {},
+        type: "submit",
+        target: {
+          elements: {
+            message: { value: data.message.trim() },
+          },
+        },
+      } as unknown as React.FormEvent<HTMLFormElement>;
 
-      handleInputChange(syntheticEvent);
+      handleSubmit(mockEvent);
 
-      // Then submit after a small delay to ensure state is updated
-      setTimeout(() => {
-        const mockEvent = {
-          preventDefault: () => {},
-          type: "submit",
-        } as React.FormEvent<HTMLFormElement>;
-        handleSubmit(mockEvent);
-      }, 0);
+      // Reset form after submission
+      form.reset();
     } catch (error) {
       console.error("Error submitting message:", error);
     }
@@ -243,11 +235,6 @@ export function ResumeMessageInput({
                         placeholder="Continue the conversation..."
                         disabled={isLoading}
                         {...field}
-                        value={input} // Keep sync with useBranchingChat input
-                        onChange={(e) => {
-                          field.onChange(e);
-                          handleInputChange(e); // Keep useBranchingChat in sync
-                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
