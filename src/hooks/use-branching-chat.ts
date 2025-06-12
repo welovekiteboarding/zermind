@@ -38,7 +38,9 @@ export function useBranchingChat({
     append,
   } = useChat({
     api: "/api/chat",
-    id: `${chatId}-branch-${parentNodeId}`,
+    id: `${chatId}-branch-${parentNodeId}-${model}${
+      branchName ? `-${branchName}` : ""
+    }`,
     initialMessages: initialContext.map((msg) => ({
       id: msg.id,
       role: msg.role,
