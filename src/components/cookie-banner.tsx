@@ -126,7 +126,7 @@ const CookieBanner: React.FC = () => {
           We use cookies to enhance your experience. By continuing to visit this
           site you agree to our use of cookies.{" "}
           <Link
-            href="/privacy-policy"
+            href="/privacy"
             className="text-rose-800 hover:text-rose-700 underline"
           >
             Learn more
