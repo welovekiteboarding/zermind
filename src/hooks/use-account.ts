@@ -62,7 +62,7 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: async (data: DeleteAccount): Promise<DeleteAccountResponse> => {
       const response = await fetch("/api/user/account/delete", {
-        method: "DELETE",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
