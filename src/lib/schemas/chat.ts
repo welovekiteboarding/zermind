@@ -59,7 +59,9 @@ export const ChatListItemSchema = ChatSchema.extend({
         createdAt: z.coerce.date(),
       })
     )
-    .max(1), // Only latest message for preview
+    .max(1)
+    .optional()
+    .default([]), // Only latest message for preview
 });
 
 // Chat creation schema (for API requests)
