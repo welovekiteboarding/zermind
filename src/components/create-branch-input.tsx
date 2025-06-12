@@ -28,6 +28,7 @@ import { ModelSelector } from "@/components/model-selector";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { type Message } from "@/lib/schemas/chat";
 
 const branchFormSchema = z.object({
   branchName: z
@@ -55,12 +56,21 @@ interface CreateBranchInputProps {
   onBranchCreated?: () => void;
 }
 
-export function CreateBranchInput({
+interface BranchingFormProps {
+  chatId: string;
+  parentNodeId: string;
+  context: Message[];
+  onClose: () => void;
+  onBranchCreated?: () => void;
+}
+
+function BranchingForm({
   chatId,
   parentNodeId,
+  context,
   onClose,
   onBranchCreated,
-}: CreateBranchInputProps) {
+}: BranchingFormProps) {
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4o-mini");
 
   // Form setup
@@ -72,20 +82,8 @@ export function CreateBranchInput({
     },
   });
 
-  // Fetch conversation context
-  const {
-    data: context = [],
-    isLoading: isLoadingContext,
-    error: contextError,
-  } = useConversationContext(chatId, parentNodeId);
-
-  const {
-    messages,
-    isLoading,
-    error,
-    handleSubmit,
-    stop,
-  } = useBranchingChat({
+  // Now initialize useBranchingChat with the loaded context
+  const { messages, isLoading, error, handleSubmit, stop } = useBranchingChat({
     chatId,
     parentNodeId,
     initialContext: context,
@@ -110,48 +108,15 @@ export function CreateBranchInput({
           },
         },
       } as unknown as React.FormEvent<HTMLFormElement>;
-      
+
       handleSubmit(mockEvent);
-      
+
       // Reset form after submission
       form.reset();
     } catch (error) {
       console.error("Error submitting branch:", error);
     }
   };
-
-  if (isLoadingContext) {
-    return (
-      <Card className="border-t bg-background">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
-            <span className="text-sm text-muted-foreground ml-2">
-              Loading conversation context...
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (contextError) {
-    return (
-      <Card className="border-t bg-background border-destructive">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{contextError.message}</span>
-            <Button size="sm" variant="outline" onClick={onClose}>
-              Close
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="border-t bg-background">
@@ -341,5 +306,64 @@ export function CreateBranchInput({
         </Form>
       </CardContent>
     </Card>
+  );
+}
+
+export function CreateBranchInput({
+  chatId,
+  parentNodeId,
+  onClose,
+  onBranchCreated,
+}: CreateBranchInputProps) {
+  // Fetch conversation context
+  const {
+    data: context = [],
+    isLoading: isLoadingContext,
+    error: contextError,
+  } = useConversationContext(chatId, parentNodeId);
+
+  // Early returns for loading and error states
+  if (isLoadingContext) {
+    return (
+      <Card className="border-t bg-background">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+            <span className="text-sm text-muted-foreground ml-2">
+              Loading conversation context...
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (contextError) {
+    return (
+      <Card className="border-t bg-background border-destructive">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-2 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">{contextError.message}</span>
+            <Button size="sm" variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Render the branching form only when context is loaded
+  return (
+    <BranchingForm
+      chatId={chatId}
+      parentNodeId={parentNodeId}
+      context={context}
+      onClose={onClose}
+      onBranchCreated={onBranchCreated}
+    />
   );
 }
