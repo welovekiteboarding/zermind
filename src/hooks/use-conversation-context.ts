@@ -4,8 +4,19 @@ import { type Message } from "@/lib/schemas/chat";
 // Query Keys
 export const conversationContextKeys = {
   all: ["conversationContext"] as const,
-  context: (chatId: string, parentNodeId: string) =>
-    [...conversationContextKeys.all, chatId, parentNodeId] as const,
+  context: (chatId: string | undefined, parentNodeId: string | undefined) => {
+    const baseKey = ["conversationContext"] as const;
+    if (chatId !== undefined && parentNodeId !== undefined) {
+      return [...baseKey, chatId, parentNodeId] as const;
+    }
+    if (chatId !== undefined) {
+      return [...baseKey, "partial", chatId] as const;
+    }
+    if (parentNodeId !== undefined) {
+      return [...baseKey, "partial", parentNodeId] as const;
+    }
+    return [...baseKey, "empty"] as const;
+  },
 } as const;
 
 // API Function
@@ -51,7 +62,7 @@ export function useConversationContext(
   parentNodeId: string | undefined
 ) {
   return useQuery({
-    queryKey: conversationContextKeys.context(chatId || "", parentNodeId || ""),
+    queryKey: conversationContextKeys.context(chatId, parentNodeId),
     queryFn: () => fetchConversationContext(chatId!, parentNodeId!),
     enabled: !!chatId && !!parentNodeId,
     staleTime: 5 * 60 * 1000, // 5 minutes - context doesn't change often
