@@ -47,7 +47,7 @@ export function useBranchingChat({
     body: {
       model,
     },
-    onFinish: (message) => {
+    onFinish: async (message) => {
       const formattedMessage: Message = {
         id: message.id,
         role: message.role as "user" | "assistant",
@@ -57,21 +57,30 @@ export function useBranchingChat({
         attachments: [],
       };
 
-      // Save assistant message to database with parentId
-      saveMessageMutation.mutate({
-        chatId,
-        message: {
-          role: formattedMessage.role,
-          content: formattedMessage.content,
-          model: formattedMessage.model,
-          attachments: [],
-          parentId: parentNodeId,
-          branchName,
-        },
-      });
+      try {
+        // Save assistant message to database with parentId
+        await saveMessageMutation.mutateAsync({
+          chatId,
+          message: {
+            role: formattedMessage.role,
+            content: formattedMessage.content,
+            model: formattedMessage.model,
+            attachments: [],
+            parentId: parentNodeId,
+            branchName,
+          },
+        });
 
-      onFinish?.(formattedMessage);
-      setIsLoading(false);
+        onFinish?.(formattedMessage);
+      } catch (error) {
+        console.error("Failed to save assistant message:", error);
+        const errorMessage =
+          error instanceof Error ? error : new Error("Failed to save message");
+        setError(errorMessage);
+        onError?.(errorMessage);
+      } finally {
+        setIsLoading(false);
+      }
     },
     onError: (error) => {
       console.error("Branching chat error:", error);
