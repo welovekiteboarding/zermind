@@ -3,9 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import {
   Send,
   StopCircle,
@@ -17,6 +25,28 @@ import {
 import { useBranchingChat } from "@/hooks/use-branching-chat";
 import { type Message } from "@/lib/schemas/chat";
 import { ModelSelector } from "@/components/model-selector";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const branchFormSchema = z.object({
+  branchName: z
+    .string()
+    .optional()
+    .refine((val) => !val || val.length >= 3, {
+      message: "Branch name must be at least 3 characters if provided",
+    })
+    .refine((val) => !val || val.length <= 100, {
+      message: "Branch name must be less than 100 characters",
+    }),
+  message: z
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(4000, "Message is too long (max 4000 characters)")
+    .trim(),
+});
+
+type BranchFormData = z.infer<typeof branchFormSchema>;
 
 interface CreateBranchInputProps {
   chatId: string;
@@ -33,9 +63,17 @@ export function CreateBranchInput({
 }: CreateBranchInputProps) {
   const [context, setContext] = useState<Message[]>([]);
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4o-mini");
-  const [branchName, setBranchName] = useState("");
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [contextError, setContextError] = useState<string | null>(null);
+
+  // Form setup
+  const form = useForm<BranchFormData>({
+    resolver: zodResolver(branchFormSchema),
+    defaultValues: {
+      branchName: "",
+      message: "",
+    },
+  });
 
   // Fetch conversation context for the node
   useEffect(() => {
@@ -88,11 +126,35 @@ export function CreateBranchInput({
     parentNodeId,
     initialContext: context,
     model: selectedModel,
-    branchName: branchName.trim() || undefined,
+    branchName: form.watch("branchName")?.trim() || undefined,
     onFinish: () => {
       onBranchCreated?.();
     },
   });
+
+  const handleBranchSubmit = async (data: BranchFormData) => {
+    if (!data.message.trim() || isLoading) return;
+
+    try {
+      // First update the input state in the hook
+      const syntheticEvent = {
+        target: { value: data.message.trim() },
+      } as React.ChangeEvent<HTMLInputElement>;
+
+      handleInputChange(syntheticEvent);
+
+      // Then submit after a small delay to ensure state is updated
+      setTimeout(() => {
+        const mockEvent = {
+          preventDefault: () => {},
+          type: "submit",
+        } as React.FormEvent<HTMLFormElement>;
+        handleSubmit(mockEvent);
+      }, 0);
+    } catch (error) {
+      console.error("Error submitting branch:", error);
+    }
+  };
 
   if (isLoadingContext) {
     return (
@@ -144,9 +206,9 @@ export function CreateBranchInput({
         {/* Context Preview */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">
+            <FormLabel className="text-xs text-muted-foreground">
               Branching from:
-            </Label>
+            </FormLabel>
             <Badge variant="outline" className="text-xs">
               {context.length} message{context.length !== 1 ? "s" : ""} in
               context
@@ -184,9 +246,9 @@ export function CreateBranchInput({
         {/* Branch Messages */}
         {messages.length > context.length && (
           <div className="space-y-2 max-h-40 overflow-y-auto">
-            <Label className="text-xs text-muted-foreground">
+            <FormLabel className="text-xs text-muted-foreground">
               New branch messages:
-            </Label>
+            </FormLabel>
             {messages.slice(context.length).map((message) => (
               <Card
                 key={message.id}
@@ -223,73 +285,101 @@ export function CreateBranchInput({
           </div>
         )}
 
-        {/* Branch Configuration */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="branch-name" className="text-sm">
-              Branch Name (optional)
-            </Label>
-            <Input
-              id="branch-name"
-              placeholder="e.g., Alternative approach, Different perspective..."
-              value={branchName}
-              onChange={(e) => setBranchName(e.target.value)}
-              disabled={isLoading}
-              className="text-sm"
+        {/* Branch Form */}
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleBranchSubmit)}
+            className="space-y-3"
+          >
+            <FormField
+              control={form.control}
+              name="branchName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Branch Name (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., Alternative approach, Different perspective..."
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Give this branch a descriptive name to identify it later
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div className="flex items-center justify-between">
-            <ModelSelector
-              selectedModel={selectedModel}
-              onModelChange={setSelectedModel}
-              disabled={isLoading}
-            />
-            <Button size="sm" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-          </div>
+            <div className="flex items-center justify-between">
+              <ModelSelector
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                disabled={isLoading}
+              />
+              <Button size="sm" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+            </div>
 
-          <form onSubmit={handleSubmit} className="flex space-x-2">
-            <Input
-              placeholder="Start the new branch with a different question or approach..."
-              value={input}
-              onChange={handleInputChange}
-              disabled={isLoading}
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
+            <FormField
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Start the new branch with a different question or approach..."
+                        disabled={isLoading}
+                        {...field}
+                        value={input} // Keep sync with useBranchingChat input
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleInputChange(e); // Keep useBranchingChat in sync
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            form.handleSubmit(handleBranchSubmit)();
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      {isLoading ? (
+                        <Button
+                          type="button"
+                          onClick={stop}
+                          size="icon"
+                          variant="destructive"
+                          className="flex-shrink-0"
+                        >
+                          <StopCircle className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="submit"
+                          disabled={!form.watch("message")?.trim()}
+                          size="icon"
+                          className="flex-shrink-0"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {isLoading ? (
-              <Button
-                type="button"
-                onClick={stop}
-                size="icon"
-                variant="destructive"
-                className="flex-shrink-0"
-              >
-                <StopCircle className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={!input.trim()}
-                size="icon"
-                className="flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            )}
+
+            <p className="text-xs text-muted-foreground text-center">
+              Create a new conversation path from this point • Press Enter to
+              send
+            </p>
           </form>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Create a new conversation path from this point • Press Enter to send
-          </p>
-        </div>
+        </Form>
       </CardContent>
     </Card>
   );

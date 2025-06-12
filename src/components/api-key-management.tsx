@@ -4,7 +4,15 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
@@ -33,13 +41,34 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-import { type CreateApiKey, type Provider } from "@/lib/schemas/api-keys";
+import { type Provider } from "@/lib/schemas/api-keys";
 import {
   useApiKeys,
   useCreateApiKey,
   useUpdateApiKey,
   useDeleteApiKey,
 } from "@/hooks/use-api-keys";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const addApiKeySchema = z.object({
+  provider: z.enum(["openrouter", "openai", "anthropic", "meta", "google"], {
+    required_error: "Please select a provider",
+  }),
+  keyName: z
+    .string()
+    .min(1, "Key name is required")
+    .min(3, "Key name must be at least 3 characters")
+    .max(50, "Key name must be less than 50 characters"),
+  apiKey: z
+    .string()
+    .min(1, "API key is required")
+    .min(10, "API key seems too short")
+    .regex(/^[A-Za-z0-9\-_.]+$/, "API key contains invalid characters"),
+});
+
+type AddApiKeyFormData = z.infer<typeof addApiKeySchema>;
 
 interface ApiKeyManagementProps {
   className?: string;
@@ -60,37 +89,31 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [formData, setFormData] = useState<CreateApiKey>({
-    provider: "openrouter",
-    apiKey: "",
-    keyName: "",
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Derived state
   const error = queryError?.message || null;
 
-  const handleAddApiKey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormErrors({});
+  // Form setup
+  const form = useForm<AddApiKeyFormData>({
+    resolver: zodResolver(addApiKeySchema),
+    defaultValues: {
+      provider: "openrouter",
+      apiKey: "",
+      keyName: "",
+    },
+  });
+
+  const handleAddApiKey = async (data: AddApiKeyFormData) => {
+    setFormError(null);
 
     try {
-      await createApiKeyMutation.mutateAsync(formData);
+      await createApiKeyMutation.mutateAsync(data);
       setSuccess("API key added successfully");
       setIsAddDialogOpen(false);
-      setFormData({ provider: "openrouter", apiKey: "", keyName: "" });
+      form.reset();
     } catch (err) {
-      if (err instanceof Error && err.message.includes("field:")) {
-        const [, field, message] = err.message.match(/field:(\w+):(.+)/) || [];
-        if (field) {
-          setFormErrors({ [field]: message });
-          return;
-        }
-      }
-      // Handle general errors by showing in the form
-      setFormErrors({
-        general: err instanceof Error ? err.message : "Failed to add API key",
-      });
+      setFormError(err instanceof Error ? err.message : "Failed to add API key");
     }
   };
 
@@ -101,10 +124,9 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
         `API key ${isActive ? "activated" : "deactivated"} successfully`
       );
     } catch (err) {
-      setFormErrors({
-        general:
-          err instanceof Error ? err.message : "Failed to update API key",
-      });
+      setFormError(
+        err instanceof Error ? err.message : "Failed to update API key"
+      );
     }
   };
 
@@ -121,10 +143,9 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
       await deleteApiKeyMutation.mutateAsync(keyId);
       setSuccess("API key deleted successfully");
     } catch (err) {
-      setFormErrors({
-        general:
-          err instanceof Error ? err.message : "Failed to delete API key",
-      });
+      setFormError(
+        err instanceof Error ? err.message : "Failed to delete API key"
+      );
     }
   };
 
@@ -157,6 +178,13 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
         </Alert>
       )}
 
+      {formError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -182,115 +210,112 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleAddApiKey} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="provider">Provider</Label>
-                <Select
-                  value={formData.provider}
-                  onValueChange={(value: Provider) =>
-                    setFormData((prev) => ({ ...prev, provider: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.value} value={provider.value}>
-                        <div>
-                          <div className="font-medium">{provider.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {provider.description}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.provider && (
-                  <p className="text-sm text-destructive">
-                    {formErrors.provider}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="keyName">Key Name</Label>
-                <Input
-                  id="keyName"
-                  placeholder="e.g., My OpenRouter Key"
-                  value={formData.keyName}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      keyName: e.target.value,
-                    }))
-                  }
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleAddApiKey)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Provider</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a provider" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {providers.map((provider) => (
+                            <SelectItem key={provider.value} value={provider.value}>
+                              <div>
+                                <div className="font-medium">{provider.label}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {provider.description}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {formErrors.keyName && (
-                  <p className="text-sm text-destructive">
-                    {formErrors.keyName}
-                  </p>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key</Label>
-                <div className="relative">
-                  <Input
-                    id="apiKey"
-                    type={showApiKey ? "text" : "password"}
-                    placeholder="Enter your API key"
-                    value={formData.apiKey}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        apiKey: e.target.value,
-                      }))
-                    }
-                  />
+                <FormField
+                  control={form.control}
+                  name="keyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Key Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., My OpenRouter Key"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A descriptive name to identify this API key
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="apiKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>API Key</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showApiKey ? "text" : "password"}
+                            placeholder="Enter your API key"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                          >
+                            {showApiKey ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Your API key will be encrypted and stored securely
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={() => setShowApiKey(!showApiKey)}
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      form.reset();
+                    }}
+                    disabled={createApiKeyMutation.isPending}
                   >
-                    {showApiKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    Cancel
                   </Button>
-                </div>
-                {formErrors.apiKey && (
-                  <p className="text-sm text-destructive">
-                    {formErrors.apiKey}
-                  </p>
-                )}
-              </div>
-
-              {formErrors.general && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{formErrors.general}</AlertDescription>
-                </Alert>
-              )}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
-                  disabled={createApiKeyMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createApiKeyMutation.isPending}>
-                  {createApiKeyMutation.isPending ? "Adding..." : "Add API Key"}
-                </Button>
-              </DialogFooter>
-            </form>
+                  <Button type="submit" disabled={createApiKeyMutation.isPending}>
+                    {createApiKeyMutation.isPending ? "Adding..." : "Add API Key"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>

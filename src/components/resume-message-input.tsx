@@ -3,12 +3,32 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Send, StopCircle, AlertCircle, User, Bot } from "lucide-react";
 import { useBranchingChat } from "@/hooks/use-branching-chat";
 import { type Message } from "@/lib/schemas/chat";
 import { ModelSelector } from "@/components/model-selector";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const messageSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(4000, "Message is too long (max 4000 characters)")
+    .trim(),
+});
+
+type MessageFormData = z.infer<typeof messageSchema>;
 
 interface ResumeMessageInputProps {
   chatId: string;
@@ -27,6 +47,14 @@ export function ResumeMessageInput({
   const [selectedModel, setSelectedModel] = useState("openai/gpt-4o-mini");
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [contextError, setContextError] = useState<string | null>(null);
+
+  // Form setup
+  const form = useForm<MessageFormData>({
+    resolver: zodResolver(messageSchema),
+    defaultValues: {
+      message: "",
+    },
+  });
 
   // Fetch conversation context for the node
   useEffect(() => {
@@ -83,6 +111,30 @@ export function ResumeMessageInput({
       onMessageSent?.();
     },
   });
+
+  const handleMessageSubmit = async (data: MessageFormData) => {
+    if (!data.message.trim() || isLoading) return;
+
+    try {
+      // First update the input state in the hook
+      const syntheticEvent = {
+        target: { value: data.message.trim() },
+      } as React.ChangeEvent<HTMLInputElement>;
+
+      handleInputChange(syntheticEvent);
+
+      // Then submit after a small delay to ensure state is updated
+      setTimeout(() => {
+        const mockEvent = {
+          preventDefault: () => {},
+          type: "submit",
+        } as React.FormEvent<HTMLFormElement>;
+        handleSubmit(mockEvent);
+      }, 0);
+    } catch (error) {
+      console.error("Error submitting message:", error);
+    }
+  };
 
   if (isLoadingContext) {
     return (
@@ -210,41 +262,60 @@ export function ResumeMessageInput({
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex space-x-2">
-            <Input
-              placeholder="Continue the conversation..."
-              value={input}
-              onChange={handleInputChange}
-              disabled={isLoading}
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-            />
-            {isLoading ? (
-              <Button
-                type="button"
-                onClick={stop}
-                size="icon"
-                variant="destructive"
-                className="flex-shrink-0"
-              >
-                <StopCircle className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={!input.trim()}
-                size="icon"
-                className="flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            )}
-          </form>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(handleMessageSubmit)}
+              className="flex space-x-2"
+            >
+              <FormField
+                control={form.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormControl>
+                      <Input
+                        placeholder="Continue the conversation..."
+                        disabled={isLoading}
+                        {...field}
+                        value={input} // Keep sync with useBranchingChat input
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleInputChange(e); // Keep useBranchingChat in sync
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            form.handleSubmit(handleMessageSubmit)();
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {isLoading ? (
+                <Button
+                  type="button"
+                  onClick={stop}
+                  size="icon"
+                  variant="destructive"
+                  className="flex-shrink-0"
+                >
+                  <StopCircle className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={!form.watch("message")?.trim()}
+                  size="icon"
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              )}
+            </form>
+          </Form>
 
           <p className="text-xs text-muted-foreground text-center">
             Your message will branch from the selected node • Press Enter to
