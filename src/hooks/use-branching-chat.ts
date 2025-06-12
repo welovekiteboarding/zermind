@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSaveMessage } from "@/hooks/use-chats-query";
 import { useChat } from "@ai-sdk/react";
 import { type Message } from "@/lib/schemas/chat";
@@ -30,6 +30,7 @@ export function useBranchingChat({
 
   const {
     messages: aiMessages,
+    setMessages,
     status,
     error: aiError,
     stop,
@@ -89,6 +90,17 @@ export function useBranchingChat({
       setIsLoading(false);
     },
   });
+
+  // Synchronize messages when initialContext changes
+  useEffect(() => {
+    const formattedMessages = initialContext.map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      createdAt: msg.createdAt,
+    }));
+    setMessages(formattedMessages);
+  }, [initialContext, setMessages]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -164,6 +176,7 @@ export function useBranchingChat({
     input,
     setInput,
     messages: aiMessages,
+    setMessages,
     isLoading: isLoading || status === "submitted" || status === "streaming",
     error: error || aiError,
     sendMessage,
