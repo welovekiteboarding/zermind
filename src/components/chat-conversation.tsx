@@ -3,6 +3,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,6 +54,19 @@ import {
 import { MessageAttachment } from "@/components/message-attachment";
 import { useFileAttachments } from "@/hooks/use-file-attachments";
 import { formatBytes } from "@/components/dropzone";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const messageSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(4000, "Message is too long (max 4000 characters)")
+    .trim(),
+});
+
+type MessageFormData = z.infer<typeof messageSchema>;
 
 interface ChatConversationProps {
   chatId: string;
@@ -78,11 +98,16 @@ export function ChatConversation({
   const saveMessageMutation = useSaveMessage();
   const updateChatTitleMutation = useUpdateChatTitle();
 
+  // Message form setup
+  const messageForm = useForm<MessageFormData>({
+    resolver: zodResolver(messageSchema),
+    defaultValues: {
+      message: "",
+    },
+  });
+
   const {
     messages,
-    input,
-    handleInputChange,
-    handleSubmit,
     isLoading,
     error,
     stop,
@@ -126,41 +151,43 @@ export function ChatConversation({
     scrollToBottom();
   }, [messages]);
 
-    // File selection handlers
-  const handleFileSelect = useCallback((type: "image" | "document") => {
-    if (!fileInputRef.current) return;
-    
-    if (type === "image") {
-      fileInputRef.current.accept = fileAttachments.allowedMimeTypes
-        .filter(mime => mime.startsWith("image/"))
-        .join(",");
-    } else {
-      fileInputRef.current.accept = fileAttachments.allowedMimeTypes
-        .filter(mime => !mime.startsWith("image/"))
-        .join(",");
-    }
-    
-    fileInputRef.current.click();
-  }, [fileAttachments.allowedMimeTypes]);
+  // File selection handlers
+  const handleFileSelect = useCallback(
+    (type: "image" | "document") => {
+      if (!fileInputRef.current) return;
 
-  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 0) {
-      fileAttachments.addFiles(files);
-    }
-    // Reset input
-    e.target.value = "";
-  }, [fileAttachments]);
+      if (type === "image") {
+        fileInputRef.current.accept = fileAttachments.allowedMimeTypes
+          .filter((mime) => mime.startsWith("image/"))
+          .join(",");
+      } else {
+        fileInputRef.current.accept = fileAttachments.allowedMimeTypes
+          .filter((mime) => !mime.startsWith("image/"))
+          .join(",");
+      }
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
+      fileInputRef.current.click();
+    },
+    [fileAttachments.allowedMimeTypes]
+  );
 
-    if (!input.trim() || isLoading) return;
+  const handleFileInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        fileAttachments.addFiles(files);
+      }
+      // Reset input
+      e.target.value = "";
+    },
+    [fileAttachments]
+  );
+
+  const handleSendMessage = async (data: MessageFormData) => {
+    if (!data.message.trim() || isLoading) return;
 
     try {
-      const userMessage = input.trim();
+      const userMessage = data.message.trim();
 
       // Check if this is the first user message and title should be updated
       const isFirstMessage =
@@ -198,7 +225,8 @@ export function ChatConversation({
         throw new Error("Failed to save your message. Please try again.");
       }
 
-      // Then send the message to AI
+      // Reset form and send message to AI
+      messageForm.reset();
       try {
         await sendMessage(userMessage);
         // Files are already cleared by the uploadFiles function
@@ -249,7 +277,7 @@ export function ChatConversation({
   };
 
   return (
-    <div 
+    <div
       ref={chatContainerRef}
       className="flex flex-col h-full relative"
       onDragEnter={fileAttachments.handleDragEnter}
@@ -267,33 +295,50 @@ export function ChatConversation({
       />
 
       {/* Drag Drop Dialog */}
-      <Dialog 
-        open={fileAttachments.isDragOver && fileAttachments.supportsAttachments} 
+      <Dialog
+        open={fileAttachments.isDragOver && fileAttachments.supportsAttachments}
         onOpenChange={() => {}} // Prevent manual closing, only close on drag leave
       >
-        <DialogContent 
+        <DialogContent
           className="pointer-events-none border-2 border-dashed border-primary bg-primary/10 backdrop-blur-sm"
           showCloseButton={false}
         >
           <div className="text-center space-y-4">
             <Upload className="h-12 w-12 text-primary mx-auto" />
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">Drop files here</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">
+                Drop files here
+              </DialogTitle>
               <DialogDescription className="text-sm">
-                {fileAttachments.modelCapabilities.supportsImages && fileAttachments.modelCapabilities.supportsDocuments
+                {fileAttachments.modelCapabilities.supportsImages &&
+                fileAttachments.modelCapabilities.supportsDocuments
                   ? "Upload images and PDFs to enhance your conversation"
                   : fileAttachments.modelCapabilities.supportsImages
                   ? "Upload images to enhance your conversation"
                   : "Upload documents to enhance your conversation"}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="flex justify-center space-x-4 text-xs text-muted-foreground">
               {fileAttachments.modelCapabilities.supportsImages && (
-                <span>Images: up to {formatBytes(fileAttachments.modelCapabilities.maxImageSize! * 1024 * 1024)}</span>
+                <span>
+                  Images: up to{" "}
+                  {formatBytes(
+                    fileAttachments.modelCapabilities.maxImageSize! *
+                      1024 *
+                      1024
+                  )}
+                </span>
               )}
               {fileAttachments.modelCapabilities.supportsDocuments && (
-                <span>PDFs: up to {formatBytes(fileAttachments.modelCapabilities.maxDocumentSize! * 1024 * 1024)}</span>
+                <span>
+                  PDFs: up to{" "}
+                  {formatBytes(
+                    fileAttachments.modelCapabilities.maxDocumentSize! *
+                      1024 *
+                      1024
+                  )}
+                </span>
               )}
             </div>
           </div>
@@ -450,16 +495,27 @@ export function ChatConversation({
                       <ImageIcon className="h-4 w-4 mr-2" />
                       Upload Images
                       <span className="ml-auto text-xs text-muted-foreground">
-                        up to {Math.round(fileAttachments.modelCapabilities.maxImageSize! || 5)}MB
+                        up to{" "}
+                        {Math.round(
+                          fileAttachments.modelCapabilities.maxImageSize! || 5
+                        )}
+                        MB
                       </span>
                     </DropdownMenuItem>
                   )}
                   {fileAttachments.modelCapabilities.supportsDocuments && (
-                    <DropdownMenuItem onClick={() => handleFileSelect("document")}>
+                    <DropdownMenuItem
+                      onClick={() => handleFileSelect("document")}
+                    >
                       <FileText className="h-4 w-4 mr-2" />
                       Upload PDFs
                       <span className="ml-auto text-xs text-muted-foreground">
-                        up to {Math.round(fileAttachments.modelCapabilities.maxDocumentSize! || 5)}MB
+                        up to{" "}
+                        {Math.round(
+                          fileAttachments.modelCapabilities.maxDocumentSize! ||
+                            5
+                        )}
+                        MB
                       </span>
                     </DropdownMenuItem>
                   )}
@@ -471,12 +527,21 @@ export function ChatConversation({
             {fileAttachments.pendingFiles.length > 0 && (
               <div className="space-y-2">
                 {fileAttachments.pendingFiles.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between bg-muted/50 rounded-lg p-2"
+                  >
                     <div className="flex items-center space-x-2">
                       <div className="h-4 w-4">
-                        {file.type.startsWith("image/") ? <ImageIcon className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
+                        {file.type.startsWith("image/") ? (
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                        ) : (
+                          <FileText className="h-4 w-4 mr-2" />
+                        )}
                       </div>
-                      <span className="text-sm font-medium truncate">{file.name}</span>
+                      <span className="text-sm font-medium truncate">
+                        {file.name}
+                      </span>
                       <Badge variant="secondary" className="text-xs">
                         {formatBytes(file.size)}
                       </Badge>
@@ -496,55 +561,71 @@ export function ChatConversation({
             )}
           </div>
 
-          
-
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="flex space-x-2">
-            <Input
-              placeholder="Type your message..."
-              value={input}
-              onChange={handleInputChange}
-              disabled={isLoading}
-              className="flex-1"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-            />
-            {isLoading ? (
-              <Button
-                type="button"
-                onClick={stop}
-                size="icon"
-                variant="destructive"
-                className="flex-shrink-0"
-              >
-                <StopCircle className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                disabled={!input.trim()}
-                size="icon"
-                className="flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            )}
-          </form>
+          <Form {...messageForm}>
+            <form
+              onSubmit={messageForm.handleSubmit(handleSendMessage)}
+              className="flex space-x-2"
+            >
+              <FormField
+                control={messageForm.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem className="flex-1">
+                    <FormControl>
+                      <Input
+                        placeholder="Type your message..."
+                        disabled={isLoading}
+                        {...field}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            messageForm.handleSubmit(handleSendMessage)();
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {isLoading ? (
+                <Button
+                  type="button"
+                  onClick={stop}
+                  size="icon"
+                  variant="destructive"
+                  className="flex-shrink-0"
+                >
+                  <StopCircle className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={!messageForm.watch("message")?.trim()}
+                  size="icon"
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              )}
+            </form>
+          </Form>
           <p className="text-xs text-muted-foreground text-center">
             Press Enter to send, Shift + Enter for new line
-            {fileAttachments.supportsAttachments && fileAttachments.pendingFiles.length === 0 && (
-              <span className="block mt-1">
-                💡 Drag and drop {fileAttachments.modelCapabilities.supportsImages && fileAttachments.modelCapabilities.supportsDocuments 
-                  ? "images or PDFs" 
-                  : fileAttachments.modelCapabilities.supportsImages 
-                  ? "images" 
-                  : "PDFs"} anywhere to attach
-              </span>
-            )}
+            {fileAttachments.supportsAttachments &&
+              fileAttachments.pendingFiles.length === 0 && (
+                <span className="block mt-1">
+                  💡 Drag and drop{" "}
+                  {fileAttachments.modelCapabilities.supportsImages &&
+                  fileAttachments.modelCapabilities.supportsDocuments
+                    ? "images or PDFs"
+                    : fileAttachments.modelCapabilities.supportsImages
+                    ? "images"
+                    : "PDFs"}{" "}
+                  anywhere to attach
+                </span>
+              )}
           </p>
         </div>
       )}

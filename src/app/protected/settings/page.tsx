@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ApiKeyManagement } from "@/components/api-key-management";
+import { DangerZone } from "@/components/danger-zone";
 import { User, Settings, Shield, Database } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -58,14 +59,11 @@ export default async function SettingsPage() {
               </label>
               <p className="text-sm bg-muted px-3 py-2 rounded-md">
                 {data?.user?.created_at
-                  ? new Date(data.user.created_at).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      }
-                    )
+                  ? new Date(data.user.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
                   : "Unknown"}
               </p>
             </div>
@@ -76,14 +74,10 @@ export default async function SettingsPage() {
               <div className="flex items-center gap-2 mt-1">
                 <Badge
                   variant={
-                    data?.user?.email_confirmed_at
-                      ? "secondary"
-                      : "destructive"
+                    data?.user?.email_confirmed_at ? "secondary" : "destructive"
                   }
                 >
-                  {data?.user?.email_confirmed_at
-                    ? "Verified"
-                    : "Not Verified"}
+                  {data?.user?.email_confirmed_at ? "Verified" : "Not Verified"}
                 </Badge>
               </div>
             </div>
@@ -108,10 +102,15 @@ export default async function SettingsPage() {
 
           {/* Other Chat Preferences */}
           <div className="pt-6 border-t">
-            <h4 className="font-medium mb-3">Other Preferences</h4>
+            <h4 className="font-medium mb-3">
+              Other Preferences{" "}
+              <Badge variant="secondary" className="text-sm">
+                Soon
+              </Badge>
+            </h4>
             <div className="text-sm text-muted-foreground">
-              Additional chat preferences will be implemented in future
-              updates. This will include:
+              Additional chat preferences will be implemented in future updates.
+              This will include:
             </div>
             <ul className="text-sm space-y-2 ml-4 mt-2">
               <li>• Default AI model selection</li>
@@ -129,6 +128,9 @@ export default async function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
             Privacy & Security
+            <Badge variant="secondary" className="text-sm">
+              Soon
+            </Badge>
           </CardTitle>
           <CardDescription>
             Control your data and security settings
@@ -140,10 +142,10 @@ export default async function SettingsPage() {
             include:
           </div>
           <ul className="text-sm space-y-2 ml-4">
-            <li>• Data export options</li>
-            <li>• Account deletion</li>
             <li>• Two-factor authentication</li>
             <li>• Session management</li>
+            <li>• Privacy preferences</li>
+            <li>• Security audit logs</li>
           </ul>
         </CardContent>
       </Card>
@@ -154,22 +156,28 @@ export default async function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
             Data Management
+            <Badge variant="secondary" className="text-sm">
+              Soon
+            </Badge>
           </CardTitle>
           <CardDescription>Manage your chat data and storage</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Data management features will be implemented in future updates.
-            This will include:
+            Data management features will be implemented in future updates. This
+            will include:
           </div>
           <ul className="text-sm space-y-2 ml-4">
-            <li>• Chat history export</li>
             <li>• Bulk message deletion</li>
             <li>• Storage usage analytics</li>
             <li>• Data retention settings</li>
+            <li>• Automatic cleanup rules</li>
           </ul>
         </CardContent>
       </Card>
+
+      {/* Danger Zone */}
+      <DangerZone />
     </div>
   );
 }

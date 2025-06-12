@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Home,
   MessageSquarePlus,
@@ -52,6 +51,7 @@ import {
   useDeleteChat,
 } from "@/hooks/use-chats-query";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
+import { useAuthUser } from "@/hooks/use-auth";
 import Link from "next/link";
 
 const navigationItems = [
@@ -75,36 +75,16 @@ const navigationItems = [
 export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useAuthUser();
   const { mode, setMode } = useChatModeStore();
   const isMindMode = mode === "mind";
 
   // React Query hooks
   const { data: chatSessions = [], isLoading } = useUserChats(
-    userId || undefined
+    user?.id || undefined
   );
   const createChatMutation = useCreateChat();
   const deleteChatMutation = useDeleteChat();
-
-  // Get user ID
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          setUserId(user.id);
-        }
-      } catch (error) {
-        console.error("Error getting user:", error);
-      }
-    };
-
-    getUser();
-  }, []);
 
   const logout = async () => {
     try {
@@ -117,7 +97,7 @@ export function AppSidebar() {
   };
 
   const createNewChat = async () => {
-    if (!userId) return;
+    if (!user?.id) return;
 
     try {
       const newChat = await createChatMutation.mutateAsync({
@@ -132,7 +112,7 @@ export function AppSidebar() {
   };
 
   const deleteChatHandler = async (chatId: string) => {
-    if (!userId) return;
+    if (!user?.id) return;
 
     try {
       await deleteChatMutation.mutateAsync(chatId);
@@ -178,7 +158,7 @@ export function AppSidebar() {
             onClick={createNewChat}
             className="w-full justify-start gap-2"
             size="sm"
-            disabled={!userId || createChatMutation.isPending}
+            disabled={!user?.id || createChatMutation.isPending}
           >
             <MessageSquarePlus className="h-4 w-4" />
             New Chat

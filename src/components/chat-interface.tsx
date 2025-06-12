@@ -11,10 +11,23 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageCircle, Sparkles, Zap } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Sparkles,
+  Zap,
+  GitBranch,
+  Network,
+  Users,
+  Share2,
+  Map as MapIcon,
+  Eye,
+  RefreshCw,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { FAQItem } from "@/components/faq-item";
 
 interface ChatInterfaceProps {
   user: SupabaseUser | null;
@@ -72,7 +85,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
   ];
 
   return (
-    <div className="w-full max-w-2xl space-y-8">
+    <div className="w-full max-w-4xl space-y-8 py-32">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center space-x-2">
@@ -165,37 +178,225 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
         </CardContent>
       </Card>
 
-      {/* Features */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border border-primary/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors">
-          <CardContent className="p-4 text-center">
-            <Brain className="h-8 w-8 text-primary mx-auto mb-2" />
-            <h3 className="font-medium text-sm">Multi-Model Support</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Chat with various AI models
-            </p>
+      {/* Enhanced Features */}
+      <div className="space-y-8 py-16">
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl font-bold">Revolutionary AI Interaction</h2>
+          <p className="text-muted-foreground text-lg">
+            The first platform to transform AI conversations into visual mind
+            maps
+          </p>
+        </div>
+
+        {/* Core Innovation Features */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 lg:grid-rows-2 gap-6">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <MapIcon className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Mind Mode</h3>
+              <p className="text-sm text-muted-foreground">
+                Transform conversations into interactive mind maps. Visualize
+                how ideas connect and evolve in real-time.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <GitBranch className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Multi-Model Branching</h3>
+              <p className="text-sm text-muted-foreground">
+                Ask the same question to different AI models and see their
+                responses branch visually. Compare approaches side-by-side.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <RefreshCw className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Resumable Conversations</h3>
+              <p className="text-sm text-muted-foreground">
+                Click any node in your conversation tree to continue from that
+                exact point. Never lose context again.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <MessageSquareMore className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Dual-Mode Interface</h3>
+              <p className="text-sm text-muted-foreground">
+                Seamlessly switch between traditional chat and revolutionary
+                mind map mode with a single click.
+              </p>
+            </CardContent>
+          </Card> */}
+
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-3">
+            <CardHeader className="text-center">
+              <Badge variant="secondary" className="text-sm">
+                Soon
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <Users className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Real-time Collaboration</h3>
+              <p className="text-sm text-muted-foreground">
+                Collaborate with your team in real-time. Build mind maps
+                together and explore ideas collectively.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-3">
+            <CardHeader className="text-center">
+              <Badge variant="secondary" className="text-sm">
+                Soon
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-6 text-center space-y-3">
+              <div className="relative">
+                <Share2 className="h-12 w-12 text-primary mx-auto" />
+              </div>
+              <h3 className="font-bold text-lg">Shareable Mind Maps</h3>
+              <p className="text-sm text-muted-foreground">
+                Share your conversation trees as interactive mind maps. Perfect
+                for presentations and knowledge sharing.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Why Choose Zermind */}
+        <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl flex items-center justify-center space-x-2">
+              <span>Why Choose Zermind?</span>
+            </CardTitle>
+            <CardDescription className="text-base">
+              The first platform to revolutionize AI interaction through visual
+              conversation trees
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                  <GitBranch className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium">Category-Defining Innovation</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We don&apos;t just clone ChatGPT - we redefine how humans
+                    interact with AI through visual conversation mapping.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                  <Network className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium">Multi-Model Intelligence</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Compare responses from GPT-4, Claude, Llama, and more in the
+                    same conversation tree.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                  <Eye className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium">Visual Thinking</h4>
+                  <p className="text-sm text-muted-foreground">
+                    See how ideas connect, evolve, and branch. Perfect for
+                    research, brainstorming, and complex problem-solving.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                  <Heart className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-medium">Open Source & Privacy-First</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Fully open source with your privacy in mind. Use your own
+                    API keys and maintain control of your data.
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-primary/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors">
-          <CardContent className="p-4 text-center">
-            <MessageCircle className="h-8 w-8 text-primary mx-auto mb-2" />
-            <h3 className="font-medium text-sm">Synced History</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Access your chats anywhere
+        {/* FAQ Section */}
+        <div className="space-y-6 py-16">
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground">
+              Everything you need to know about Zermind
             </p>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="border border-primary/10 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-colors">
-          <CardContent className="p-4 text-center">
-            <Zap className="h-8 w-8 text-primary mx-auto mb-2" />
-            <h3 className="font-medium text-sm">Real-time Streaming</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Fast, responsive conversations
-            </p>
-          </CardContent>
-        </Card>
+          <div className="space-y-4 w-full mx-auto">
+            <FAQItem
+              question="What makes Zermind different from other AI chat tools?"
+              answer="Zermind is the first platform to transform AI conversations into interactive mind maps. Instead of linear chat, you can visualize how ideas branch, compare different AI models side-by-side, and resume conversations from any point in the tree. It's visual thinking meets AI conversation."
+            />
+
+            <FAQItem
+              question="How does Mind Mode work?"
+              answer="Mind Mode converts your conversations into visual node-based trees. Each message becomes a node, and you can branch conversations by asking different questions or using different AI models. You can click any node to continue that conversation thread, creating a rich, explorable knowledge structure."
+            />
+
+            <FAQItem
+              question="Can I use my own API keys?"
+              answer="Yes! Zermind supports bring-your-own-key (BYOK) through OpenRouter, giving you access to multiple AI models while maintaining control over your usage and costs. We also support direct integrations with major providers."
+            />
+
+            <FAQItem
+              question="Is Zermind free to use?"
+              answer="Zermind is open source and free to use. You only pay for the AI model usage through your own API keys. We believe in keeping AI conversation tools accessible to everyone while respecting privacy and user control."
+            />
+
+            <FAQItem
+              question="Can I collaborate with others on mind maps?"
+              answer="Yes! Zermind supports real-time collaboration, allowing multiple users to work on the same conversation tree simultaneously. Perfect for team brainstorming, research projects, and collaborative problem-solving."
+            />
+
+            <FAQItem
+              question="How do I share my conversation trees?"
+              answer="You can share your mind maps as interactive public links that others can explore and branch from. You can also export them as images or interactive HTML files for presentations and documentation."
+            />
+
+            <FAQItem
+              question="Is my data private and secure?"
+              answer="Absolutely. Your conversations are stored securely, and you control your data. When using your own API keys, your conversations go directly to the AI providers. We're open source, so you can verify our privacy practices yourself."
+            />
+
+            <FAQItem
+              question="Which AI models are supported?"
+              answer="Zermind supports all major AI models including GPT-4, Claude 3, Llama 3.1, and many more through OpenRouter integration. You can use different models within the same conversation tree for diverse perspectives."
+            />
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
@@ -246,8 +447,9 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           {" • "}
           <Link
             href="https://github.com/sponsors/okikeSolutions"
-            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
           >
+            <Heart className="h-4 w-4 fill-primary" />
             Support Zermind
           </Link>
         </p>

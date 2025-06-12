@@ -18,6 +18,8 @@ export const MessageSchema = z.object({
   createdAt: z.coerce.date(),
   model: z.string().nullish(), // Handles both null and undefined
   attachments: z.array(AttachmentSchema).optional().default([]),
+  parentId: z.string().nullish(), // For conversation branching
+  branchName: z.string().nullish(), // User-defined branch labels
 });
 
 // Message creation schema (for API requests)
@@ -26,6 +28,8 @@ export const CreateMessageSchema = z.object({
   content: z.string().min(1, "Message content is required"),
   model: z.string().nullish(), // Handles both null and undefined
   attachments: z.array(AttachmentSchema).optional().default([]),
+  parentId: z.string().optional(), // For conversation branching
+  branchName: z.string().optional(), // User-defined branch labels
 });
 
 // Chat schema
@@ -48,12 +52,16 @@ export const ChatListItemSchema = ChatSchema.extend({
   _count: z.object({
     messages: z.number(),
   }),
-  messages: z.array(
-    z.object({
-      content: z.string(),
-      createdAt: z.coerce.date(),
-    })
-  ).max(1), // Only latest message for preview
+  messages: z
+    .array(
+      z.object({
+        content: z.string(),
+        createdAt: z.coerce.date(),
+      })
+    )
+    .max(1)
+    .optional()
+    .default([]), // Only latest message for preview
 });
 
 // Chat creation schema (for API requests)
@@ -97,4 +105,4 @@ export type GetUserChatsResponse = z.infer<typeof GetUserChatsResponseSchema>;
 export type CreateChatResponse = z.infer<typeof CreateChatResponseSchema>;
 export type GetChatResponse = z.infer<typeof GetChatResponseSchema>;
 export type DeleteChatResponse = z.infer<typeof DeleteChatResponseSchema>;
-export type ErrorResponse = z.infer<typeof ErrorResponseSchema>; 
+export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
