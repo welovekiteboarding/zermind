@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from "@/lib/prisma";
 
 /**
  * Delete all user data from the database
@@ -19,63 +19,54 @@ export async function deleteUserData(userId: string): Promise<{
     const result = await prisma.$transaction(async (tx) => {
       // Delete all user's usage logs first
       const deletedUsageLogs = await tx.usageLog.deleteMany({
-        where: { userId }
+        where: { userId },
       });
 
       // Delete all user's API keys
       const deletedApiKeys = await tx.apiKey.deleteMany({
-        where: { userId }
+        where: { userId },
       });
 
       // Delete conversation insights (related to messages)
       await tx.conversationInsight.deleteMany({
         where: {
           chat: {
-            userId
-          }
-        }
+            userId,
+          },
+        },
       });
 
       // Delete session participants
       await tx.sessionParticipant.deleteMany({
-        where: { userId }
+        where: { userId },
       });
 
       // Delete collaboration sessions for user's chats
       await tx.collaborationSession.deleteMany({
         where: {
           chat: {
-            userId
-          }
-        }
-      });
-
-      // Get count of messages before deletion (for reporting)
-      const messageCount = await tx.message.count({
-        where: {
-          chat: {
-            userId
-          }
-        }
+            userId,
+          },
+        },
       });
 
       // Delete all messages (will cascade from chat deletion, but let's be explicit)
-      await tx.message.deleteMany({
+      const deletedMessages = await tx.message.deleteMany({
         where: {
           chat: {
-            userId
-          }
-        }
+            userId,
+          },
+        },
       });
 
       // Delete all user's chats (this should cascade delete messages due to foreign key constraints)
       const deletedChats = await tx.chat.deleteMany({
-        where: { userId }
+        where: { userId },
       });
 
       return {
         chats: deletedChats.count,
-        messages: messageCount,
+        messages: deletedMessages.count,
         apiKeys: deletedApiKeys.count,
         usageLogs: deletedUsageLogs.count,
       };
@@ -86,7 +77,7 @@ export async function deleteUserData(userId: string): Promise<{
       deletedItems: result,
     };
   } catch (error) {
-    console.error('Error deleting user data:', error);
+    console.error("Error deleting user data:", error);
     return {
       success: false,
       deletedItems: {
@@ -110,32 +101,30 @@ export async function getUserDataStats(userId: string): Promise<{
   accountAge: number; // in days
 }> {
   try {
-    const [
-      chatsCount,
-      messagesCount,
-      apiKeysCount,
-      usageLogsCount,
-    ] = await Promise.all([
-      prisma.chat.count({ where: { userId } }),
-      prisma.message.count({
-        where: {
-          chat: { userId }
-        }
-      }),
-      prisma.apiKey.count({ where: { userId } }),
-      prisma.usageLog.count({ where: { userId } }),
-    ]);
+    const [chatsCount, messagesCount, apiKeysCount, usageLogsCount] =
+      await Promise.all([
+        prisma.chat.count({ where: { userId } }),
+        prisma.message.count({
+          where: {
+            chat: { userId },
+          },
+        }),
+        prisma.apiKey.count({ where: { userId } }),
+        prisma.usageLog.count({ where: { userId } }),
+      ]);
 
     // Calculate account age (would need user creation date from Supabase)
     // For now, we'll use the oldest chat as a proxy
     const oldestChat = await prisma.chat.findFirst({
       where: { userId },
-      orderBy: { createdAt: 'asc' },
-      select: { createdAt: true }
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
     });
 
-    const accountAge = oldestChat 
-      ? Math.floor((Date.now() - oldestChat.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+    const accountAge = oldestChat
+      ? Math.floor(
+          (Date.now() - oldestChat.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+        )
       : 0;
 
     return {
@@ -146,7 +135,7 @@ export async function getUserDataStats(userId: string): Promise<{
       accountAge,
     };
   } catch (error) {
-    console.error('Error getting user data stats:', error);
+    console.error("Error getting user data stats:", error);
     return {
       chats: 0,
       messages: 0,
@@ -170,10 +159,10 @@ export async function exportUserData(userId: string) {
         where: { userId },
         include: {
           messages: {
-            orderBy: { createdAt: 'asc' }
-          }
+            orderBy: { createdAt: "asc" },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       }),
       // Get API keys (without encrypted values for security)
       prisma.apiKey.findMany({
@@ -186,12 +175,12 @@ export async function exportUserData(userId: string) {
           createdAt: true,
           lastUsedAt: true,
           // Exclude encryptedKey for security
-        }
+        },
       }),
       // Get usage logs
       prisma.usageLog.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       }),
     ]);
 
@@ -200,17 +189,20 @@ export async function exportUserData(userId: string) {
       userId,
       summary: {
         totalChats: chats.length,
-        totalMessages: chats.reduce((sum, chat) => sum + chat.messages.length, 0),
+        totalMessages: chats.reduce(
+          (sum, chat) => sum + chat.messages.length,
+          0
+        ),
         totalApiKeys: apiKeys.length,
         totalUsageLogs: usageLogs.length,
       },
-      chats: chats.map(chat => ({
+      chats: chats.map((chat) => ({
         id: chat.id,
         title: chat.title,
         mode: chat.mode,
         createdAt: chat.createdAt,
         updatedAt: chat.updatedAt,
-        messages: chat.messages.map(msg => ({
+        messages: chat.messages.map((msg) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
@@ -218,7 +210,7 @@ export async function exportUserData(userId: string) {
           createdAt: msg.createdAt,
           parentId: msg.parentId,
           branchName: msg.branchName,
-        }))
+        })),
       })),
       apiKeys,
       usageLogs,
@@ -226,7 +218,7 @@ export async function exportUserData(userId: string) {
 
     return exportData;
   } catch (error) {
-    console.error('Error exporting user data:', error);
-    throw new Error('Failed to export user data');
+    console.error("Error exporting user data:", error);
+    throw new Error("Failed to export user data");
   }
-} 
+}
