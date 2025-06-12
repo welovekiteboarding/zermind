@@ -3,10 +3,12 @@
 import React, { useState, useCallback } from "react";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
+import { ResumeMessageInput } from "@/components/resume-message-input";
+import { CreateBranchInput } from "@/components/create-branch-input";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageSquare, GitBranch, ArrowLeft } from "lucide-react";
+import { Brain, MessageSquare, ArrowLeft } from "lucide-react";
 
 interface Message {
   id: string;
@@ -35,18 +37,35 @@ export function DualModeChat({
 }: DualModeChatProps) {
   const { mode } = useChatModeStore();
   const [resumeFromNodeId, setResumeFromNodeId] = useState<string | null>(null);
+  const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
+    string | null
+  >(null);
 
   // Handle resuming conversation from a specific node
   const handleResumeConversation = useCallback((nodeId: string) => {
     setResumeFromNodeId(nodeId);
-    // TODO: Implement the logic to resume conversation from this node
+    setCreateBranchFromNodeId(null); // Clear branch creation if active
     console.log("Resuming conversation from node:", nodeId);
   }, []);
 
   // Handle creating a new branch from a node
   const handleCreateBranch = useCallback((parentNodeId: string) => {
-    // TODO: Implement the logic to create a new conversation branch
+    setCreateBranchFromNodeId(parentNodeId);
+    setResumeFromNodeId(null); // Clear resume if active
     console.log("Creating branch from node:", parentNodeId);
+  }, []);
+
+  // Handle successful message sent in resume mode
+  const handleResumeMessageSent = useCallback(() => {
+    // Refresh the mind map to show new messages
+    // This will be handled by the query invalidation in the useSaveMessage hook
+    console.log("Resume message sent successfully");
+  }, []);
+
+  // Handle successful branch creation
+  const handleBranchCreated = useCallback(() => {
+    // Refresh the mind map to show new branch
+    console.log("Branch created successfully");
   }, []);
 
   // Convert traditional messages to mind map format
@@ -83,14 +102,17 @@ export function DualModeChat({
                 Mind Mode
               </Badge>
 
-              {resumeFromNodeId && (
+              {(resumeFromNodeId || createBranchFromNodeId) && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setResumeFromNodeId(null)}
+                  onClick={() => {
+                    setResumeFromNodeId(null);
+                    setCreateBranchFromNodeId(null);
+                  }}
                 >
                   <ArrowLeft className="h-3 w-3 mr-1" />
-                  Clear Resume
+                  Clear Action
                 </Button>
               )}
             </div>
@@ -106,24 +128,24 @@ export function DualModeChat({
           />
         </div>
 
-        {/* Resume Conversation Panel (when a node is selected for resumption) */}
+        {/* Resume Conversation Panel */}
         {resumeFromNodeId && (
-          <div className="border-t bg-background p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <GitBranch className="h-4 w-4 text-purple-500" />
-              <span className="text-sm font-medium">
-                Resume from node: {resumeFromNodeId}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              Continue the conversation from this point. Your new messages will
-              branch from here.
-            </p>
-            {/* TODO: Add message input here for resuming conversation */}
-            <div className="bg-muted rounded-md p-3 text-sm text-muted-foreground">
-              Message input will be implemented here...
-            </div>
-          </div>
+          <ResumeMessageInput
+            chatId={chatId}
+            parentNodeId={resumeFromNodeId}
+            onClose={() => setResumeFromNodeId(null)}
+            onMessageSent={handleResumeMessageSent}
+          />
+        )}
+
+        {/* Create Branch Panel */}
+        {createBranchFromNodeId && (
+          <CreateBranchInput
+            chatId={chatId}
+            parentNodeId={createBranchFromNodeId}
+            onClose={() => setCreateBranchFromNodeId(null)}
+            onBranchCreated={handleBranchCreated}
+          />
         )}
       </div>
     );
