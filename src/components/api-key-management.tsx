@@ -1,171 +1,143 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Switch } from '@/components/ui/switch';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { Key, Plus, Trash2, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { 
-  type PublicApiKey, 
-  type CreateApiKey,
-  type Provider 
-} from '@/lib/schemas/api-keys';
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Key,
+  Plus,
+  Trash2,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { type CreateApiKey, type Provider } from "@/lib/schemas/api-keys";
+import {
+  useApiKeys,
+  useCreateApiKey,
+  useUpdateApiKey,
+  useDeleteApiKey,
+} from "@/hooks/use-api-keys";
 
 interface ApiKeyManagementProps {
   className?: string;
 }
 
 export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
-  const [apiKeys, setApiKeys] = useState<PublicApiKey[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query hooks
+  const {
+    data: apiKeys = [],
+    isLoading: loading,
+    error: queryError,
+  } = useApiKeys();
+  const createApiKeyMutation = useCreateApiKey();
+  const updateApiKeyMutation = useUpdateApiKey();
+  const deleteApiKeyMutation = useDeleteApiKey();
+
+  // UI state
   const [success, setSuccess] = useState<string | null>(null);
-  
-  // Form state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [formData, setFormData] = useState<CreateApiKey>({
-    provider: 'openrouter',
-    apiKey: '',
-    keyName: ''
+    provider: "openrouter",
+    apiKey: "",
+    keyName: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
 
-  // Load API keys on component mount
-  useEffect(() => {
-    loadApiKeys();
-  }, []);
-
-  // Clear messages after 5 seconds
-  useEffect(() => {
-    if (error || success) {
-      const timer = setTimeout(() => {
-        setError(null);
-        setSuccess(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error, success]);
-
-  const loadApiKeys = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/user/api-keys');
-      
-      if (!response.ok) {
-        throw new Error('Failed to load API keys');
-      }
-      
-      const data = await response.json();
-      setApiKeys(data.apiKeys || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load API keys');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Derived state
+  const error = queryError?.message || null;
 
   const handleAddApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setFormErrors({});
-    
+
     try {
-      const response = await fetch('/api/user/api-keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        if (data.field) {
-          setFormErrors({ [data.field]: data.error });
-        } else {
-          setError(data.error || 'Failed to add API key');
-        }
-        return;
-      }
-      
-      setSuccess('API key added successfully');
+      await createApiKeyMutation.mutateAsync(formData);
+      setSuccess("API key added successfully");
       setIsAddDialogOpen(false);
-      setFormData({ provider: 'openrouter', apiKey: '', keyName: '' });
-      await loadApiKeys();
+      setFormData({ provider: "openrouter", apiKey: "", keyName: "" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add API key');
-    } finally {
-      setSubmitting(false);
+      if (err instanceof Error && err.message.includes("field:")) {
+        const [, field, message] = err.message.match(/field:(\w+):(.+)/) || [];
+        if (field) {
+          setFormErrors({ [field]: message });
+          return;
+        }
+      }
+      // Handle general errors by showing in the form
+      setFormErrors({
+        general: err instanceof Error ? err.message : "Failed to add API key",
+      });
     }
   };
 
   const handleToggleActive = async (keyId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/user/api-keys/${keyId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isActive }),
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update API key');
-      }
-      
-      setSuccess(`API key ${isActive ? 'activated' : 'deactivated'} successfully`);
-      await loadApiKeys();
+      await updateApiKeyMutation.mutateAsync({ keyId, data: { isActive } });
+      setSuccess(
+        `API key ${isActive ? "activated" : "deactivated"} successfully`
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update API key');
+      setFormErrors({
+        general:
+          err instanceof Error ? err.message : "Failed to update API key",
+      });
     }
   };
 
   const handleDeleteApiKey = async (keyId: string) => {
-    if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this API key? This action cannot be undone."
+      )
+    ) {
       return;
     }
-    
+
     try {
-      const response = await fetch(`/api/user/api-keys/${keyId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete API key');
-      }
-      
-      setSuccess('API key deleted successfully');
-      await loadApiKeys();
+      await deleteApiKeyMutation.mutateAsync(keyId);
+      setSuccess("API key deleted successfully");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete API key');
+      setFormErrors({
+        general:
+          err instanceof Error ? err.message : "Failed to delete API key",
+      });
     }
   };
 
   const providers: { value: Provider; label: string; description: string }[] = [
-    { value: 'openrouter', label: 'OpenRouter', description: 'Access to multiple AI models' },
-    { value: 'openai', label: 'OpenAI', description: 'GPT models' },
-    { value: 'anthropic', label: 'Anthropic', description: 'Claude models' },
-    { value: 'meta', label: 'Meta', description: 'Llama models' },
-    { value: 'google', label: 'Google', description: 'Gemini models' },
+    {
+      value: "openrouter",
+      label: "OpenRouter",
+      description: "Access to multiple AI models",
+    },
+    { value: "openai", label: "OpenAI", description: "GPT models" },
+    { value: "anthropic", label: "Anthropic", description: "Claude models" },
+    { value: "meta", label: "Meta", description: "Llama models" },
+    { value: "google", label: "Google", description: "Gemini models" },
   ];
 
   return (
@@ -177,7 +149,7 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {success && (
         <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
           <CheckCircle className="h-4 w-4" />
@@ -193,7 +165,7 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
             Manage your API keys for different AI providers
           </p>
         </div>
-        
+
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -205,16 +177,19 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
             <DialogHeader>
               <DialogTitle>Add New API Key</DialogTitle>
               <DialogDescription>
-                Add an API key to use your own credits with AI providers. Your key will be encrypted and stored securely.
+                Add an API key to use your own credits with AI providers. Your
+                key will be encrypted and stored securely.
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleAddApiKey} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="provider">Provider</Label>
-                <Select 
-                  value={formData.provider} 
-                  onValueChange={(value: Provider) => setFormData(prev => ({ ...prev, provider: value }))}
+                <Select
+                  value={formData.provider}
+                  onValueChange={(value: Provider) =>
+                    setFormData((prev) => ({ ...prev, provider: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a provider" />
@@ -224,30 +199,41 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                       <SelectItem key={provider.value} value={provider.value}>
                         <div>
                           <div className="font-medium">{provider.label}</div>
-                          <div className="text-xs text-muted-foreground">{provider.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {provider.description}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {formErrors.provider && (
-                  <p className="text-sm text-destructive">{formErrors.provider}</p>
+                  <p className="text-sm text-destructive">
+                    {formErrors.provider}
+                  </p>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="keyName">Key Name</Label>
                 <Input
                   id="keyName"
                   placeholder="e.g., My OpenRouter Key"
                   value={formData.keyName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, keyName: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      keyName: e.target.value,
+                    }))
+                  }
                 />
                 {formErrors.keyName && (
-                  <p className="text-sm text-destructive">{formErrors.keyName}</p>
+                  <p className="text-sm text-destructive">
+                    {formErrors.keyName}
+                  </p>
                 )}
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="apiKey">API Key</Label>
                 <div className="relative">
@@ -256,7 +242,12 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                     type={showApiKey ? "text" : "password"}
                     placeholder="Enter your API key"
                     value={formData.apiKey}
-                    onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        apiKey: e.target.value,
+                      }))
+                    }
                   />
                   <Button
                     type="button"
@@ -265,25 +256,38 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                     className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     onClick={() => setShowApiKey(!showApiKey)}
                   >
-                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 {formErrors.apiKey && (
-                  <p className="text-sm text-destructive">{formErrors.apiKey}</p>
+                  <p className="text-sm text-destructive">
+                    {formErrors.apiKey}
+                  </p>
                 )}
               </div>
-              
+
+              {formErrors.general && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{formErrors.general}</AlertDescription>
+                </Alert>
+              )}
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsAddDialogOpen(false)}
-                  disabled={submitting}
+                  disabled={createApiKeyMutation.isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? 'Adding...' : 'Add API Key'}
+                <Button type="submit" disabled={createApiKeyMutation.isPending}>
+                  {createApiKeyMutation.isPending ? "Adding..." : "Add API Key"}
                 </Button>
               </DialogFooter>
             </form>
@@ -321,26 +325,42 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-medium">{apiKey.keyName}</h4>
-                      <Badge variant={apiKey.provider === 'openrouter' ? 'default' : 'secondary'}>
-                        {providers.find(p => p.value === apiKey.provider)?.label || apiKey.provider}
+                      <Badge
+                        variant={
+                          apiKey.provider === "openrouter"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {providers.find((p) => p.value === apiKey.provider)
+                          ?.label || apiKey.provider}
                       </Badge>
-                      <Badge variant={apiKey.isActive ? 'default' : 'secondary'}>
-                        {apiKey.isActive ? 'Active' : 'Inactive'}
+                      <Badge
+                        variant={apiKey.isActive ? "default" : "secondary"}
+                      >
+                        {apiKey.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       <p>Key: {apiKey.keyPreview}</p>
-                      <p>Added: {new Date(apiKey.createdAt).toLocaleDateString()}</p>
+                      <p>
+                        Added: {new Date(apiKey.createdAt).toLocaleDateString()}
+                      </p>
                       {apiKey.lastUsedAt && (
-                        <p>Last used: {new Date(apiKey.lastUsedAt).toLocaleDateString()}</p>
+                        <p>
+                          Last used:{" "}
+                          {new Date(apiKey.lastUsedAt).toLocaleDateString()}
+                        </p>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={apiKey.isActive}
-                      onCheckedChange={(checked) => handleToggleActive(apiKey.id, checked)}
+                      onCheckedChange={(checked) =>
+                        handleToggleActive(apiKey.id, checked)
+                      }
                     />
                     <Button
                       variant="outline"
@@ -358,4 +378,4 @@ export function ApiKeyManagement({ className }: ApiKeyManagementProps) {
       )}
     </div>
   );
-} 
+}

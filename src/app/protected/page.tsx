@@ -1,5 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -15,11 +18,42 @@ import {
   Users,
   Share,
   Bot,
+  MessageSquarePlus,
+  ArrowRight,
 } from "lucide-react";
+import { useCreateChat } from "@/hooks/use-chats-query";
+import { useAuthUser } from "@/hooks/use-auth";
 
-export default async function ProtectedPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
+export default function ProtectedPage() {
+  const router = useRouter();
+  const { user, isLoading } = useAuthUser();
+  const createChatMutation = useCreateChat();
+
+  const createNewChat = async () => {
+    if (!user?.id) return;
+
+    try {
+      const newChat = await createChatMutation.mutateAsync({
+        title: "New Chat",
+      });
+
+      // Navigate to the new chat
+      router.push(`/protected/chat/${newChat.id}`);
+    } catch (error) {
+      console.error("Error creating new chat:", error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full items-center justify-center p-4">
@@ -27,7 +61,7 @@ export default async function ProtectedPage() {
         <div>
           <h1 className="text-3xl font-bold mb-4">Welcome to Zermind</h1>
           <p className="text-muted-foreground text-lg">
-            Hello <span className="font-semibold">{data?.user?.email}</span>
+            Hello <span className="font-semibold">{user?.email}</span>
           </p>
           <p className="text-muted-foreground mt-2">
             The first AI chat platform with{" "}
@@ -115,12 +149,34 @@ export default async function ProtectedPage() {
           </Card>
         </div>
 
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Switch between modes using the toggle in the sidebar. Create a new
-            chat to experience both interfaces!
-          </p>
-        </div>
+        {/* Call to Action Section */}
+        <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center gap-2 text-xl">
+              <MessageSquarePlus className="h-5 w-5" />
+              Ready to get started?
+            </CardTitle>
+            <CardDescription className="text-base">
+              Create your first chat and experience both Chat and Mind Mode interfaces.
+              Switch between modes using the toggle in the sidebar anytime!
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={createNewChat}
+              size="lg"
+              className="w-full sm:w-auto mx-auto flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              disabled={!user?.id || createChatMutation.isPending}
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+              {createChatMutation.isPending ? "Creating..." : "Start New Chat"}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Your chat will be saved automatically and accessible from the sidebar
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

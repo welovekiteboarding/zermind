@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -10,33 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Activity, Calendar } from "lucide-react";
-import { type UsageStats } from "@/lib/schemas/usage";
+import { useUsageStats } from "@/hooks/use-usage";
 
 export default function UsagePage() {
-  const [stats, setStats] = useState<UsageStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUsageStats = async () => {
-      try {
-        const response = await fetch("/api/usage");
-        if (!response.ok) {
-          throw new Error("Failed to fetch usage statistics");
-        }
-        const data = await response.json();
-        setStats(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load usage statistics"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsageStats();
-  }, []);
+  const { data: stats, isLoading: loading, error } = useUsageStats();
 
   if (loading) {
     return (
@@ -72,7 +48,10 @@ export default function UsagePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
-              <p>Error loading usage statistics: {error}</p>
+              <p>
+                Error loading usage statistics:{" "}
+                {error?.message || "Unknown error"}
+              </p>
             </div>
           </CardContent>
         </Card>
