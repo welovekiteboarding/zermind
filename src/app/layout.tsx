@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/providers/query-provider";
 import { Toaster } from "sonner";
 import "./globals.css";
+import CookieBanner from "@/components/cookie-banner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <CookieBanner />
             <Toaster />
           </ThemeProvider>
         </QueryProvider>
