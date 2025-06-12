@@ -24,8 +24,8 @@ export async function GET(
 
     const { nodeId } = await params;
 
-    // Get conversation context up to the specified node
-    const context = await getConversationContext(nodeId);
+    // Get conversation context up to the specified node with user authorization
+    const context = await getConversationContext(nodeId, user.id);
 
     return NextResponse.json({
       context,

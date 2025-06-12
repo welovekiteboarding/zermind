@@ -195,7 +195,7 @@ export async function addBranchingMessage(
 }
 
 // Get conversation context up to a specific node (for resuming)
-export async function getConversationContext(nodeId: string): Promise<
+export async function getConversationContext(nodeId: string, userId: string): Promise<
   {
     id: string;
     role: string;
@@ -204,9 +204,14 @@ export async function getConversationContext(nodeId: string): Promise<
     createdAt: Date;
   }[]
 > {
-  // First get the specific message
-  const targetMessage = await prisma.message.findUnique({
-    where: { id: nodeId },
+  // First get the specific message and verify ownership
+  const targetMessage = await prisma.message.findFirst({
+    where: { 
+      id: nodeId,
+      chat: {
+        userId: userId,
+      },
+    },
     include: {
       chat: true,
     },
@@ -237,8 +242,13 @@ export async function getConversationContext(nodeId: string): Promise<
     });
 
     if (currentMessage.parentId) {
-      currentMessage = await prisma.message.findUnique({
-        where: { id: currentMessage.parentId },
+      currentMessage = await prisma.message.findFirst({
+        where: { 
+          id: currentMessage.parentId,
+          chat: {
+            userId: userId,
+          },
+        },
         include: {
           chat: true,
         },
