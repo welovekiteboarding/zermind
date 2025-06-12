@@ -83,7 +83,7 @@ function BranchingForm({
   });
 
   // Now initialize useBranchingChat with the loaded context
-  const { messages, isLoading, error, handleSubmit, stop } = useBranchingChat({
+  const { messages, isLoading, error, sendMessage, stop } = useBranchingChat({
     chatId,
     parentNodeId,
     initialContext: context,
@@ -98,18 +98,7 @@ function BranchingForm({
     if (!data.message.trim() || isLoading) return;
 
     try {
-      // Create a synthetic event with the form data
-      const mockEvent = {
-        preventDefault: () => {},
-        type: "submit",
-        target: {
-          elements: {
-            message: { value: data.message.trim() },
-          },
-        },
-      } as unknown as React.FormEvent<HTMLFormElement>;
-
-      handleSubmit(mockEvent);
+      await sendMessage(data.message.trim());
 
       // Reset form after submission
       form.reset();

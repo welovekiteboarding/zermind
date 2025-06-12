@@ -60,7 +60,7 @@ export function ResumeMessageInput({
     error: contextError,
   } = useConversationContext(chatId, parentNodeId);
 
-  const { messages, isLoading, error, handleSubmit, stop } = useBranchingChat({
+  const { messages, isLoading, error, sendMessage, stop } = useBranchingChat({
     chatId,
     parentNodeId,
     initialContext: context,
@@ -74,18 +74,7 @@ export function ResumeMessageInput({
     if (!data.message.trim() || isLoading) return;
 
     try {
-      // Create a synthetic event with the form data
-      const mockEvent = {
-        preventDefault: () => {},
-        type: "submit",
-        target: {
-          elements: {
-            message: { value: data.message.trim() },
-          },
-        },
-      } as unknown as React.FormEvent<HTMLFormElement>;
-
-      handleSubmit(mockEvent);
+      await sendMessage(data.message.trim());
 
       // Reset form after submission
       form.reset();
