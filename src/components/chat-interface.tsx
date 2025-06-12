@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageCircle, Sparkles, Zap } from "lucide-react";
+import { Brain, Heart, MessageCircle, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -246,8 +246,9 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           {" • "}
           <Link
             href="https://github.com/sponsors/okikeSolutions"
-            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+            className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
           >
+            <Heart className="h-4 w-4 fill-primary" />
             Support Zermind
           </Link>
         </p>
