@@ -109,32 +109,32 @@ function BranchingForm({
 
   return (
     <Card className="border-t bg-background">
-      <CardContent className="p-4 space-y-4">
+      <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
           <div className="flex items-center gap-2">
             <GitBranch className="h-4 w-4 text-orange-500" />
             <h4 className="text-sm font-medium">Create New Branch</h4>
           </div>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs w-fit">
             From node: {parentNodeId.slice(0, 8)}...
           </Badge>
         </div>
 
         {/* Context Preview */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
             <FormLabel className="text-xs text-muted-foreground">
               Branching from:
             </FormLabel>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs w-fit">
               {context.length} message{context.length !== 1 ? "s" : ""} in
               context
             </Badge>
           </div>
 
           {context.length > 0 && (
-            <div className="bg-muted rounded-md p-3 max-h-24 overflow-y-auto">
+            <div className="bg-muted rounded-md p-2 sm:p-3 max-h-20 sm:max-h-24 overflow-y-auto">
               <div className="text-xs text-muted-foreground space-y-1">
                 {context.slice(-1).map((msg) => (
                   <div key={msg.id} className="flex items-start gap-2">
@@ -143,15 +143,15 @@ function BranchingForm({
                     ) : (
                       <Bot className="h-3 w-3 mt-0.5 flex-shrink-0" />
                     )}
-                    <span className="text-xs">
-                      {msg.content.length > 80
-                        ? msg.content.substring(0, 80) + "..."
+                    <span className="text-xs leading-relaxed">
+                      {msg.content.length > 60
+                        ? msg.content.substring(0, 60) + "..."
                         : msg.content}
                     </span>
                   </div>
                 ))}
                 {context.length > 1 && (
-                  <div className="text-center text-xs text-muted-foreground/70">
+                  <div className="text-center text-xs text-muted-foreground/70 pt-1">
                     ... and {context.length - 1} more message
                     {context.length - 1 !== 1 ? "s" : ""} before this
                   </div>
@@ -163,7 +163,7 @@ function BranchingForm({
 
         {/* Branch Messages */}
         {messages.length > context.length && (
-          <div className="space-y-2 max-h-40 overflow-y-auto">
+          <div className="space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
             <FormLabel className="text-xs text-muted-foreground">
               New branch messages:
             </FormLabel>
@@ -185,7 +185,7 @@ function BranchingForm({
                         <Bot className="h-4 w-4" />
                       )}
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                       {message.content}
                     </div>
                   </div>
@@ -197,9 +197,9 @@ function BranchingForm({
 
         {/* Error Display */}
         {error && (
-          <div className="flex items-center space-x-2 text-destructive text-sm">
-            <AlertCircle className="h-4 w-4" />
-            <span>{error.message}</span>
+          <div className="flex items-start space-x-2 text-destructive text-sm">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span className="leading-relaxed">{error.message}</span>
           </div>
         )}
 
@@ -219,10 +219,11 @@ function BranchingForm({
                     <Input
                       placeholder="e.g., Alternative approach, Different perspective..."
                       disabled={isLoading}
+                      className="min-h-[44px] sm:min-h-auto text-base sm:text-sm"
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-xs leading-relaxed">
                     Give this branch a descriptive name to identify it later
                   </FormDescription>
                   <FormMessage />
@@ -230,13 +231,20 @@ function BranchingForm({
               )}
             />
 
-            <div className="flex items-center justify-between">
-              <ModelSelector
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                disabled={isLoading}
-              />
-              <Button size="sm" variant="outline" onClick={onClose}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <div className="w-full sm:w-auto">
+                <ModelSelector
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  disabled={isLoading}
+                />
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={onClose}
+                className="min-h-[36px] sm:min-h-auto w-full sm:w-auto"
+              >
                 Cancel
               </Button>
             </div>
@@ -247,10 +255,11 @@ function BranchingForm({
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       <Input
                         placeholder="Start the new branch with a different question or approach..."
                         disabled={isLoading}
+                        className="flex-1 min-h-[44px] sm:min-h-auto text-base sm:text-sm"
                         {...field}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
@@ -258,7 +267,6 @@ function BranchingForm({
                             form.handleSubmit(handleBranchSubmit)();
                           }
                         }}
-                        className="flex-1"
                       />
                       {isLoading ? (
                         <Button
@@ -266,7 +274,7 @@ function BranchingForm({
                           onClick={stop}
                           size="icon"
                           variant="destructive"
-                          className="flex-shrink-0"
+                          className="flex-shrink-0 min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto"
                         >
                           <StopCircle className="h-4 w-4" />
                         </Button>
@@ -275,7 +283,7 @@ function BranchingForm({
                           type="submit"
                           disabled={!form.watch("message")?.trim()}
                           size="icon"
-                          className="flex-shrink-0"
+                          className="flex-shrink-0 min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto"
                         >
                           <Send className="h-4 w-4" />
                         </Button>
@@ -287,7 +295,7 @@ function BranchingForm({
               )}
             />
 
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center leading-relaxed px-2">
               Create a new conversation path from this point • Press Enter to
               send
             </p>
@@ -315,7 +323,7 @@ export function CreateBranchInput({
   if (isLoadingContext) {
     return (
       <Card className="border-t bg-background">
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -332,11 +340,18 @@ export function CreateBranchInput({
   if (contextError) {
     return (
       <Card className="border-t bg-background border-destructive">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm">{contextError.message}</span>
-            <Button size="sm" variant="outline" onClick={onClose}>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 text-destructive">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">{contextError.message}</span>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={onClose}
+              className="min-h-[36px] sm:min-h-auto"
+            >
               Close
             </Button>
           </div>
