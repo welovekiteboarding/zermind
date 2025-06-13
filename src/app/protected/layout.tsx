@@ -23,12 +23,12 @@ export default async function ProtectedLayout({
           <AppSidebar />
 
           {/* Main Content Area */}
-          <main className="flex-1 flex flex-col">
+          <main className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 flex flex-col min-h-0">
-              <div className="p-4 border-b flex-shrink-0">
+              <div className="p-2 sm:p-4 border-b flex-shrink-0">
                 <SidebarTrigger />
               </div>
-              <div className="flex-1 overflow-y-auto">{children}</div>
+              <div className="flex-1 overflow-auto">{children}</div>
             </div>
           </main>
         </div>

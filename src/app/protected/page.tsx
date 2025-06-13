@@ -56,52 +56,54 @@ export default function ProtectedPage() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center p-4">
-      <div className="max-w-4xl mx-auto text-center space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-4">Welcome to Zermind</h1>
-          <p className="text-muted-foreground text-lg">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-full">
+      <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
+        <div className="space-y-2 sm:space-y-4">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+            Welcome to Zermind
+          </h1>
+          <p className="text-muted-foreground text-base sm:text-lg">
             Hello <span className="font-semibold">{user?.email}</span>
           </p>
-          <p className="text-muted-foreground mt-2">
-            The first AI chat platform with{" "}
+          <p className="text-muted-foreground text-sm sm:text-base mt-1 sm:mt-2">
+            The first AI chat with{" "}
             <span className="font-semibold text-purple-600">Mind Mode</span> -
             where conversations become visual mind maps.
           </p>
         </div>
 
         {/* Mode Comparison */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-blue-500" />
-                <CardTitle className="text-blue-700 dark:text-blue-300">
+            <CardHeader className="pb-3 sm:pb-6">
+              <div className="flex items-center gap-2 flex-wrap">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                <CardTitle className="text-blue-700 dark:text-blue-300 text-base sm:text-lg">
                   Chat Mode
                 </CardTitle>
                 <Badge
                   variant="secondary"
-                  className="bg-blue-100 text-blue-700"
+                  className="bg-blue-100 text-blue-700 text-xs"
                 >
                   Default
                 </Badge>
               </div>
-              <CardDescription className="text-start">
+              <CardDescription className="text-start text-sm">
                 Traditional linear conversations
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <MessageSquare className="h-3 w-3" />
+                  <MessageSquare className="h-3 w-3 flex-shrink-0" />
                   Linear chat interface
                 </li>
                 <li className="flex items-center gap-2">
-                  <Bot className="h-3 w-3" />
+                  <Bot className="h-3 w-3 flex-shrink-0" />
                   Multiple AI models
                 </li>
                 <li className="flex items-center gap-2">
-                  <Zap className="h-3 w-3" />
+                  <Zap className="h-3 w-3 flex-shrink-0" />
                   Real-time streaming
                 </li>
               </ul>
@@ -109,39 +111,39 @@ export default function ProtectedPage() {
           </Card>
 
           <Card className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-purple-500" />
-                <CardTitle className="text-purple-700 dark:text-purple-300">
+            <CardHeader className="pb-3 sm:pb-6">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                <CardTitle className="text-purple-700 dark:text-purple-300 text-base sm:text-lg">
                   Mind Mode
                 </CardTitle>
                 <Badge
                   variant="secondary"
-                  className="bg-purple-100 text-purple-700"
+                  className="bg-purple-100 text-purple-700 text-xs"
                 >
                   New!
                 </Badge>
               </div>
-              <CardDescription className="text-start">
+              <CardDescription className="text-start text-sm">
                 Revolutionary conversation visualization
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="text-sm space-y-2 text-muted-foreground">
                 <li className="flex items-center gap-2">
-                  <GitBranch className="h-3 w-3" />
+                  <GitBranch className="h-3 w-3 flex-shrink-0" />
                   Branching conversations
                 </li>
                 <li className="flex items-center gap-2">
-                  <Zap className="h-3 w-3" />
+                  <Zap className="h-3 w-3 flex-shrink-0" />
                   Resume from any node
                 </li>
                 <li className="flex items-center gap-2">
-                  <Users className="h-3 w-3" />
+                  <Users className="h-3 w-3 flex-shrink-0" />
                   Multi-model debates
                 </li>
                 <li className="flex items-center gap-2">
-                  <Share className="h-3 w-3" />
+                  <Share className="h-3 w-3 flex-shrink-0" />
                   Shareable mind maps
                 </li>
               </ul>
@@ -151,21 +153,22 @@ export default function ProtectedPage() {
 
         {/* Call to Action Section */}
         <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-center gap-2 text-xl">
-              <MessageSquarePlus className="h-5 w-5" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="flex items-center justify-center gap-2 text-lg sm:text-xl">
+              <MessageSquarePlus className="h-4 w-4 sm:h-5 sm:w-5" />
               Ready to get started?
             </CardTitle>
-            <CardDescription className="text-base">
-              Create your first chat and experience both Chat and Mind Mode interfaces.
-              Switch between modes using the toggle in the sidebar anytime!
+            <CardDescription className="text-sm sm:text-base">
+              Create your first chat and experience both Chat and Mind Mode
+              interfaces. Switch between modes using the toggle in the sidebar
+              anytime!
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4">
             <Button
               onClick={createNewChat}
               size="lg"
-              className="w-full sm:w-auto mx-auto flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              className="w-full sm:w-auto mx-auto flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-sm sm:text-base"
               disabled={!user?.id || createChatMutation.isPending}
             >
               <MessageSquarePlus className="h-4 w-4" />
@@ -173,7 +176,8 @@ export default function ProtectedPage() {
               <ArrowRight className="h-4 w-4" />
             </Button>
             <p className="text-xs text-muted-foreground">
-              Your chat will be saved automatically and accessible from the sidebar
+              Your chat will be saved automatically and accessible from the
+              sidebar
             </p>
           </CardContent>
         </Card>

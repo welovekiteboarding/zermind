@@ -106,13 +106,7 @@ export function ChatConversation({
     },
   });
 
-  const {
-    messages,
-    isLoading,
-    error,
-    stop,
-    sendMessage,
-  } = useChat({
+  const { messages, isLoading, error, stop, sendMessage } = useChat({
     chatId,
     initialMessages,
     model: selectedModel,
@@ -346,16 +340,18 @@ export function ChatConversation({
       </Dialog>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
         {/* Error Display */}
         {error && (
-          <div className="flex items-center justify-center mb-4">
-            <Card className="border-destructive bg-destructive/10 max-w-md">
-              <CardContent className="p-3">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <Card className="border-destructive bg-destructive/10 max-w-sm sm:max-w-md mx-2">
+              <CardContent className="p-2 sm:p-3">
                 <div className="flex items-center space-x-2 text-destructive">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
                   <div className="text-sm">
-                    <p className="font-medium">Error occurred</p>
+                    <p className="font-medium text-xs sm:text-sm">
+                      Error occurred
+                    </p>
                     <p className="text-xs mt-1">{error.message}</p>
                   </div>
                 </div>
@@ -365,11 +361,13 @@ export function ChatConversation({
         )}
 
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-            <MessageSquare className="h-12 w-12 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-3 sm:space-y-4 px-4">
+            <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
             <div>
-              <h3 className="text-lg font-medium">Start the conversation</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-base sm:text-lg font-medium">
+                Start the conversation
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Send a message to begin chatting with AI
               </p>
               <p className="text-xs text-muted-foreground mt-2">
@@ -389,27 +387,27 @@ export function ChatConversation({
               >
                 <Card
                   className={cn(
-                    "max-w-[80%] md:max-w-[70%]",
+                    "max-w-[85%] sm:max-w-[80%] md:max-w-[70%]",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted"
                   )}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-start space-x-2">
+                  <CardContent className="p-2 sm:p-3">
+                    <div className="flex items-start space-x-1.5 sm:space-x-2">
                       <div className="flex-shrink-0 mt-0.5">
                         {message.role === "user" ? (
-                          <User className="h-4 w-4" />
+                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
                         ) : (
-                          <Bot className="h-4 w-4" />
+                          <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="whitespace-pre-wrap break-words text-sm">
+                        <div className="whitespace-pre-wrap break-words text-xs sm:text-sm">
                           {message.content}
                         </div>
                         <MessageAttachment attachments={message.attachments} />
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between mt-1.5 sm:mt-2">
                           <Badge
                             variant="outline"
                             className={cn(
@@ -425,7 +423,7 @@ export function ChatConversation({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 hover:bg-background/20"
+                              className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-background/20"
                               onClick={() =>
                                 copyToClipboard(message.content, message.id)
                               }
@@ -447,14 +445,14 @@ export function ChatConversation({
 
             {isLoading && (
               <div className="flex justify-start">
-                <Card className="bg-muted max-w-[80%] md:max-w-[70%]">
-                  <CardContent className="p-3">
-                    <div className="flex items-center space-x-2">
-                      <Bot className="h-4 w-4" />
+                <Card className="bg-muted max-w-[85%] sm:max-w-[80%] md:max-w-[70%]">
+                  <CardContent className="p-2 sm:p-3">
+                    <div className="flex items-center space-x-1.5 sm:space-x-2">
+                      <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                        <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-current rounded-full animate-bounce"></div>
                       </div>
                     </div>
                   </CardContent>
@@ -468,30 +466,39 @@ export function ChatConversation({
 
       {/* Message Input - Hidden in shared view */}
       {!isSharedView && (
-        <div className="border-t p-4 bg-background/50 backdrop-blur space-y-3">
+        <div className="border-t p-2 sm:p-4 bg-background/50 backdrop-blur space-y-2 sm:space-y-3">
           {/* Model Selector and BYOK Status */}
-          <div className="flex items-center gap-3 justify-start">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <ModelSelector
               selectedModel={selectedModel}
               onModelChange={setSelectedModel}
               disabled={isLoading}
-              className="w-full max-w-xs"
+              className="w-full sm:max-w-xs"
             />
 
             {/* Attachment Button */}
             {fileAttachments.supportsAttachments && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" disabled={isLoading}>
+                  <Button
+                    variant="outline"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto h-9 sm:h-10"
+                  >
                     <Paperclip className="h-4 w-4 mr-2" />
-                    Attach
+                    <span className="text-sm">Attach</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuLabel>Attach Files</DropdownMenuLabel>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel className="text-sm">
+                    Attach Files
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {fileAttachments.modelCapabilities.supportsImages && (
-                    <DropdownMenuItem onClick={() => handleFileSelect("image")}>
+                    <DropdownMenuItem
+                      onClick={() => handleFileSelect("image")}
+                      className="text-sm"
+                    >
                       <ImageIcon className="h-4 w-4 mr-2" />
                       Upload Images
                       <span className="ml-auto text-xs text-muted-foreground">
@@ -506,6 +513,7 @@ export function ChatConversation({
                   {fileAttachments.modelCapabilities.supportsDocuments && (
                     <DropdownMenuItem
                       onClick={() => handleFileSelect("document")}
+                      className="text-sm"
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Upload PDFs
@@ -522,44 +530,47 @@ export function ChatConversation({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-
-            {/* Pending Files */}
-            {fileAttachments.pendingFiles.length > 0 && (
-              <div className="space-y-2">
-                {fileAttachments.pendingFiles.map((file) => (
-                  <div
-                    key={file.id}
-                    className="flex items-center justify-between bg-muted/50 rounded-lg p-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4">
-                        {file.type.startsWith("image/") ? (
-                          <ImageIcon className="h-4 w-4 mr-2" />
-                        ) : (
-                          <FileText className="h-4 w-4 mr-2" />
-                        )}
-                      </div>
-                      <span className="text-sm font-medium truncate">
-                        {file.name}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {formatBytes(file.size)}
-                      </Badge>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => fileAttachments.removeFile(file.id)}
-                      disabled={isLoading || fileAttachments.isUploading}
-                      className="h-6 w-6 p-0"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
+
+          {/* Pending Files */}
+          {fileAttachments.pendingFiles.length > 0 && (
+            <div className="space-y-2">
+              {fileAttachments.pendingFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between bg-muted/50 rounded-lg p-2"
+                >
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <div className="h-4 w-4 flex-shrink-0">
+                      {file.type.startsWith("image/") ? (
+                        <ImageIcon className="h-4 w-4" />
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                    </div>
+                    <span className="text-xs sm:text-sm font-medium truncate">
+                      {file.name}
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs flex-shrink-0"
+                    >
+                      {formatBytes(file.size)}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileAttachments.removeFile(file.id)}
+                    disabled={isLoading || fileAttachments.isUploading}
+                    className="h-6 w-6 p-0 ml-2 flex-shrink-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Input Form */}
           <Form {...messageForm}>
@@ -576,6 +587,7 @@ export function ChatConversation({
                       <Input
                         placeholder="Type your message..."
                         disabled={isLoading}
+                        className="h-9 sm:h-10 text-sm"
                         {...field}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
@@ -595,7 +607,7 @@ export function ChatConversation({
                   onClick={stop}
                   size="icon"
                   variant="destructive"
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10"
                 >
                   <StopCircle className="h-4 w-4" />
                 </Button>
@@ -604,14 +616,14 @@ export function ChatConversation({
                   type="submit"
                   disabled={!messageForm.watch("message")?.trim()}
                   size="icon"
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               )}
             </form>
           </Form>
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-muted-foreground text-center px-2">
             Press Enter to send, Shift + Enter for new line
             {fileAttachments.supportsAttachments &&
               fileAttachments.pendingFiles.length === 0 && (
@@ -632,7 +644,7 @@ export function ChatConversation({
 
       {/* Read-only footer for shared view */}
       {isSharedView && (
-        <div className="border-t p-4 bg-background/50 backdrop-blur">
+        <div className="border-t p-2 sm:p-4 bg-background/50 backdrop-blur">
           <p className="text-xs text-muted-foreground text-center">
             This is a shared chat conversation in read-only mode
           </p>

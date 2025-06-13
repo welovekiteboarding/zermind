@@ -25,7 +25,7 @@ const MODELS = [
   {
     id: "anthropic/claude-3-haiku",
     name: "Claude 3 Haiku",
-    provider: "Anthropic", 
+    provider: "Anthropic",
     description: "Fast and efficient for simple tasks",
     tier: "standard",
   },
@@ -66,13 +66,14 @@ interface ModelSelectorProps {
   className?: string;
 }
 
-export function ModelSelector({ 
-  selectedModel, 
-  onModelChange, 
+export function ModelSelector({
+  selectedModel,
+  onModelChange,
   disabled = false,
-  className 
+  className,
 }: ModelSelectorProps) {
-  const currentModel = MODELS.find(model => model.id === selectedModel) || MODELS[0];
+  const currentModel =
+    MODELS.find((model) => model.id === selectedModel) || MODELS[0];
 
   const getTierColor = (tier: string) => {
     switch (tier) {
@@ -88,27 +89,39 @@ export function ModelSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           disabled={disabled}
-          className={cn("justify-between min-w-[200px]", className)}
+          className={cn(
+            "justify-between min-w-0 w-full sm:min-w-[200px] h-9 sm:h-10 text-sm",
+            className
+          )}
         >
-          <div className="flex items-center space-x-2">
-            <Bot className="h-4 w-4" />
-            <span className="truncate">{currentModel.name}</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
+            <Bot className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate text-xs sm:text-sm">
+              {currentModel.name}
+            </span>
           </div>
-          <ChevronDown className="h-4 w-4 opacity-50" />
+          <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-80">
-        <DropdownMenuLabel>Select AI Model</DropdownMenuLabel>
+      <DropdownMenuContent
+        align="start"
+        className="w-72 sm:w-80 max-h-[70vh] overflow-y-auto"
+      >
+        <DropdownMenuLabel className="text-sm">
+          Select AI Model
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {/* Group by provider */}
         {["Anthropic", "OpenAI", "Meta", "Google"].map((provider) => {
-          const providerModels = MODELS.filter(model => model.provider === provider);
+          const providerModels = MODELS.filter(
+            (model) => model.provider === provider
+          );
           if (providerModels.length === 0) return null;
-          
+
           return (
             <div key={provider}>
               <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">
@@ -119,20 +132,25 @@ export function ModelSelector({
                   key={model.id}
                   onClick={() => onModelChange(model.id)}
                   className={cn(
-                    "flex flex-col items-start p-3 cursor-pointer",
+                    "flex flex-col items-start p-2 sm:p-3 cursor-pointer min-h-[3rem] sm:min-h-[3.5rem]",
                     selectedModel === model.id && "bg-accent"
                   )}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="font-medium">{model.name}</span>
-                    <Badge 
-                      variant="secondary" 
-                      className={cn("text-xs", getTierColor(model.tier))}
+                    <span className="font-medium text-sm sm:text-base truncate pr-2">
+                      {model.name}
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "text-xs flex-shrink-0",
+                        getTierColor(model.tier)
+                      )}
                     >
                       {model.tier}
                     </Badge>
                   </div>
-                  <span className="text-xs text-muted-foreground mt-1">
+                  <span className="text-xs text-muted-foreground mt-1 line-clamp-2 sm:line-clamp-1">
                     {model.description}
                   </span>
                 </DropdownMenuItem>
@@ -141,13 +159,13 @@ export function ModelSelector({
             </div>
           );
         })}
-        
+
         <div className="px-2 py-1">
           <p className="text-xs text-muted-foreground">
             Powered by{" "}
-            <a 
-              href="https://openrouter.ai" 
-              target="_blank" 
+            <a
+              href="https://openrouter.ai"
+              target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-foreground"
             >
@@ -158,4 +176,4 @@ export function ModelSelector({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-} 
+}

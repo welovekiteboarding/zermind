@@ -85,19 +85,19 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
   ];
 
   return (
-    <div className="w-full max-w-4xl space-y-8 py-32">
+    <div className="w-full max-w-4xl space-y-6 sm:space-y-8 pt-20 sm:pt-24 lg:pt-32 pb-8 sm:pb-16 lg:pb-32 px-4 sm:px-6">
       {/* Header */}
-      <div className="text-center space-y-4">
+      <div className="text-center space-y-3 sm:space-y-4">
         <div className="flex items-center justify-center space-x-2">
-          <h1 className="text-4xl font-bold bg-primary bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-primary bg-clip-text text-transparent">
             Zermind
           </h1>
         </div>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-base sm:text-lg">
           Your open-source AI chat companion
         </p>
         {!user && (
-          <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-4 py-2 border">
+          <p className="text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 sm:px-4 py-2 border">
             Sign in to start chatting with AI models
           </p>
         )}
@@ -105,24 +105,24 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
 
       {/* Main Chat Card */}
       <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="flex items-center justify-center space-x-2">
+        <CardHeader className="text-center pb-3 sm:pb-4 px-4 sm:px-6">
+          <CardTitle className="flex items-center justify-center space-x-2 text-lg sm:text-xl">
             <span>Start Chatting</span>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             {user
               ? "Choose from multiple AI models and start your conversation"
               : "Sign in to access multiple AI models and start chatting"}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
           {/* Available Models */}
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground flex items-center space-x-2">
               <Zap className="h-4 w-4" />
               <span>Available Models</span>
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {modelProviders.map((model, index) => (
                 <Badge
                   key={index}
@@ -131,7 +131,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                     user
                       ? "hover:scale-105 cursor-pointer"
                       : "opacity-60 cursor-not-allowed"
-                  } transition-transform`}
+                  } transition-transform text-xs sm:text-sm`}
                 >
                   {model.name}
                   <span className="ml-1 text-xs opacity-70">
@@ -143,7 +143,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           </div>
 
           {/* Message Input */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="relative">
               <Input
                 placeholder={
@@ -154,7 +154,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 disabled={!user}
-                className="pr-12 h-12 text-base border-2 border-primary/20 focus:border-primary/40 transition-colors disabled:opacity-60"
+                className="pr-12 h-10 sm:h-12 text-sm sm:text-base border-2 border-primary/20 focus:border-primary/40 transition-colors disabled:opacity-60"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (message.trim() || !user)) {
                     handleStartChat();
@@ -162,16 +162,16 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 }}
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
               </div>
             </div>
 
             <Button
               onClick={handleStartChat}
               disabled={!!user && !message.trim()}
-              className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/80 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none"
+              className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium bg-primary hover:bg-primary/80 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none"
             >
-              <Sparkles className="mr-2 h-5 w-5" />
+              <Sparkles className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
               {!user ? "Sign In to Start Chatting" : "Start Conversation"}
             </Button>
           </div>
@@ -179,23 +179,25 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       </Card>
 
       {/* Enhanced Features */}
-      <div className="space-y-8 py-16">
-        <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Revolutionary AI Interaction</h2>
-          <p className="text-muted-foreground text-lg">
+      <div className="space-y-6 sm:space-y-8 py-8 sm:py-16">
+        <div className="text-center space-y-1 sm:space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-bold">
+            Revolutionary AI Interaction
+          </h2>
+          <p className="text-muted-foreground text-base sm:text-lg">
             The first platform to transform AI conversations into visual mind
             maps
           </p>
         </div>
 
         {/* Core Innovation Features */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 lg:grid-rows-2 gap-6">
-          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
-            <CardContent className="p-6 text-center space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 lg:grid-rows-2 gap-4 sm:gap-6">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-2">
+            <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3">
               <div className="relative">
-                <MapIcon className="h-12 w-12 text-primary mx-auto" />
+                <MapIcon className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
               </div>
-              <h3 className="font-bold text-lg">Mind Mode</h3>
+              <h3 className="font-bold text-base sm:text-lg">Mind Mode</h3>
               <p className="text-sm text-muted-foreground">
                 Transform conversations into interactive mind maps. Visualize
                 how ideas connect and evolve in real-time.
@@ -203,12 +205,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
-            <CardContent className="p-6 text-center space-y-3">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-2">
+            <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3">
               <div className="relative">
-                <GitBranch className="h-12 w-12 text-primary mx-auto" />
+                <GitBranch className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
               </div>
-              <h3 className="font-bold text-lg">Multi-Model Branching</h3>
+              <h3 className="font-bold text-base sm:text-lg">
+                Multi-Model Branching
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Ask the same question to different AI models and see their
                 responses branch visually. Compare approaches side-by-side.
@@ -216,12 +220,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-2">
-            <CardContent className="p-6 text-center space-y-3">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-2">
+            <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3">
               <div className="relative">
-                <RefreshCw className="h-12 w-12 text-primary mx-auto" />
+                <RefreshCw className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
               </div>
-              <h3 className="font-bold text-lg">Resumable Conversations</h3>
+              <h3 className="font-bold text-base sm:text-lg">
+                Resumable Conversations
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Click any node in your conversation tree to continue from that
                 exact point. Never lose context again.
@@ -229,30 +235,19 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </CardContent>
           </Card>
 
-          {/* <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
-            <CardContent className="p-6 text-center space-y-3">
-              <div className="relative">
-                <MessageSquareMore className="h-12 w-12 text-primary mx-auto" />
-              </div>
-              <h3 className="font-bold text-lg">Dual-Mode Interface</h3>
-              <p className="text-sm text-muted-foreground">
-                Seamlessly switch between traditional chat and revolutionary
-                mind map mode with a single click.
-              </p>
-            </CardContent>
-          </Card> */}
-
-          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-3">
-            <CardHeader className="text-center">
-              <Badge variant="secondary" className="text-sm">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
+            <CardHeader className="text-center pb-2 sm:pb-3">
+              <Badge variant="secondary" className="text-xs sm:text-sm">
                 Soon
               </Badge>
             </CardHeader>
-            <CardContent className="p-6 text-center space-y-3">
+            <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
               <div className="relative">
-                <Users className="h-12 w-12 text-primary mx-auto" />
+                <Users className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
               </div>
-              <h3 className="font-bold text-lg">Real-time Collaboration</h3>
+              <h3 className="font-bold text-base sm:text-lg">
+                Real-time Collaboration
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Collaborate with your team in real-time. Build mind maps
                 together and explore ideas collectively.
@@ -260,17 +255,19 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm col-span-3">
-            <CardHeader className="text-center">
-              <Badge variant="secondary" className="text-sm">
+          <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
+            <CardHeader className="text-center pb-2 sm:pb-3">
+              <Badge variant="secondary" className="text-xs sm:text-sm">
                 Soon
               </Badge>
             </CardHeader>
-            <CardContent className="p-6 text-center space-y-3">
+            <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
               <div className="relative">
-                <Share2 className="h-12 w-12 text-primary mx-auto" />
+                <Share2 className="h-10 w-10 sm:h-12 sm:w-12 text-primary mx-auto" />
               </div>
-              <h3 className="font-bold text-lg">Shareable Mind Maps</h3>
+              <h3 className="font-bold text-base sm:text-lg">
+                Shareable Mind Maps
+              </h3>
               <p className="text-sm text-muted-foreground">
                 Share your conversation trees as interactive mind maps. Perfect
                 for presentations and knowledge sharing.
@@ -281,23 +278,25 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
 
         {/* Why Choose Zermind */}
         <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl flex items-center justify-center space-x-2">
+          <CardHeader className="text-center px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl flex items-center justify-center space-x-2">
               <span>Why Choose Zermind?</span>
             </CardTitle>
-            <CardDescription className="text-base">
+            <CardDescription className="text-sm sm:text-base">
               The first platform to revolutionize AI interaction through visual
               conversation trees
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 px-4 sm:px-6">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-start space-x-3">
-                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5 flex-shrink-0">
                   <GitBranch className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium">Category-Defining Innovation</h4>
+                  <h4 className="font-medium text-sm sm:text-base">
+                    Category-Defining Innovation
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     We don&apos;t just clone ChatGPT - we redefine how humans
                     interact with AI through visual conversation mapping.
@@ -305,11 +304,13 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5 flex-shrink-0">
                   <Network className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium">Multi-Model Intelligence</h4>
+                  <h4 className="font-medium text-sm sm:text-base">
+                    Multi-Model Intelligence
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     Compare responses from GPT-4, Claude, Llama, and more in the
                     same conversation tree.
@@ -317,13 +318,15 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 </div>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-start space-x-3">
-                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5 flex-shrink-0">
                   <Eye className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium">Visual Thinking</h4>
+                  <h4 className="font-medium text-sm sm:text-base">
+                    Visual Thinking
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     See how ideas connect, evolve, and branch. Perfect for
                     research, brainstorming, and complex problem-solving.
@@ -331,11 +334,13 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
                 </div>
               </div>
               <div className="flex items-start space-x-3">
-                <div className="bg-primary/20 rounded-full p-2 mt-0.5">
+                <div className="bg-primary/20 rounded-full p-2 mt-0.5 flex-shrink-0">
                   <Heart className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium">Open Source & Privacy-First</h4>
+                  <h4 className="font-medium text-sm sm:text-base">
+                    Open Source & Privacy-First
+                  </h4>
                   <p className="text-sm text-muted-foreground">
                     Fully open source with your privacy in mind. Use your own
                     API keys and maintain control of your data.
@@ -347,15 +352,17 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
         </Card>
 
         {/* FAQ Section */}
-        <div className="space-y-6 py-16">
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold">Frequently Asked Questions</h2>
-            <p className="text-muted-foreground">
+        <div className="space-y-4 sm:space-y-6 py-8 sm:py-16">
+          <div className="text-center space-y-1 sm:space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
               Everything you need to know about Zermind
             </p>
           </div>
 
-          <div className="space-y-4 w-full mx-auto">
+          <div className="space-y-3 sm:space-y-4 w-full mx-auto">
             <FAQItem
               question="What makes Zermind different from other AI chat tools?"
               answer="Zermind is the first platform to transform AI conversations into interactive mind maps. Instead of linear chat, you can visualize how ideas branch, compare different AI models side-by-side, and resume conversations from any point in the tree. It's visual thinking meets AI conversation."
@@ -400,7 +407,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       </div>
 
       {/* Footer */}
-      <div className="text-center text-sm text-muted-foreground">
+      <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-2 sm:space-y-3">
         <p>
           Open source • Privacy-focused • Built for{" "}
           <Link
@@ -412,47 +419,47 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             Cloneathon 2025
           </Link>
         </p>
-        <p className="mt-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <Link
             href="/privacy"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
             Privacy Policy
           </Link>
-          {" • "}
+          <span>•</span>
           <Link
             href="/terms"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
             Terms of Use
           </Link>
-          {" • "}
+          <span>•</span>
           <Link
             href="/imprint"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
             Imprint
           </Link>
-        </p>
-        <p className="mt-2 flex flex-wrap items-center justify-center gap-1">
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
           <Link
             href="https://github.com/okikeSolutions/zermind"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
           >
-            <GitHubIcon className="h-4 w-4" />
+            <GitHubIcon className="h-3 w-3 sm:h-4 sm:w-4" />
             GitHub Repo
           </Link>
-          {" • "}
+          <span>•</span>
           <Link
             href="https://github.com/sponsors/okikeSolutions"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
           >
-            <Heart className="h-4 w-4 fill-primary" />
+            <Heart className="h-3 w-3 sm:h-4 sm:w-4 fill-primary" />
             Support Zermind
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   );

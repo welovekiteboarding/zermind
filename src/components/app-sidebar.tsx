@@ -153,15 +153,15 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="border-b">
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <Button
             onClick={createNewChat}
-            className="w-full justify-start gap-2"
+            className="w-full justify-start gap-2 h-9 sm:h-10"
             size="sm"
             disabled={!user?.id || createChatMutation.isPending}
           >
             <MessageSquarePlus className="h-4 w-4" />
-            New Chat
+            <span className="text-sm">New Chat</span>
           </Button>
         </div>
       </SidebarHeader>
@@ -170,15 +170,17 @@ export function AppSidebar() {
         <ScrollArea className="flex-1">
           {/* Navigation */}
           <SidebarGroup>
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-xs sm:text-sm">
+              Navigation
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild className="h-9 sm:h-10">
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span className="text-sm">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -189,7 +191,9 @@ export function AppSidebar() {
 
           {/* Chat Sessions */}
           <SidebarGroup>
-            <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-xs sm:text-sm">
+              Recent Chats
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {isLoading ? (
@@ -206,7 +210,7 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   ))
                 ) : chatSessions.length === 0 ? (
-                  <div className="p-4 text-center text-sm text-muted-foreground">
+                  <div className="p-3 sm:p-4 text-center text-xs sm:text-sm text-muted-foreground">
                     No chats yet. Create your first chat!
                   </div>
                 ) : (
@@ -214,14 +218,17 @@ export function AppSidebar() {
                     const { title } = getChatDisplayInfo(chat);
                     return (
                       <SidebarMenuItem key={chat.id}>
-                        <SidebarMenuButton asChild>
+                        <SidebarMenuButton
+                          asChild
+                          className="h-auto min-h-[2.5rem] sm:min-h-[3rem] py-2"
+                        >
                           <a
                             href={`/protected/chat/${chat.id}`}
                             className="flex-1 m-2"
                           >
-                            <MessageSquare className="h-4 w-4" />
-                            <div className="flex-1 overflow-hidden">
-                              <div className="truncate font-medium">
+                            <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 overflow-hidden min-w-0">
+                              <div className="truncate font-medium text-sm">
                                 {title}
                               </div>
                               <div className="text-xs text-muted-foreground">
@@ -232,14 +239,14 @@ export function AppSidebar() {
                         </SidebarMenuButton>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <SidebarMenuAction>
+                            <SidebarMenuAction className="h-8 w-8">
                               <MoreHorizontal className="h-4 w-4" />
                             </SidebarMenuAction>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent side="right" align="start">
                             <DropdownMenuItem
                               onClick={() => deleteChatHandler(chat.id)}
-                              className="text-destructive focus:text-destructive"
+                              className="text-destructive focus:text-destructive text-sm"
                               disabled={deleteChatMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -260,9 +267,36 @@ export function AppSidebar() {
       {/* Mode Switcher */}
       <SidebarGroup>
         <SidebarGroupContent>
-          <div className="px-2">
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
+          <div className="px-2 sm:px-2">
+            {/* Mobile: Compact switch only */}
+            <div className="sm:hidden">
+              <div className="flex items-center justify-between p-3 border border-dashed rounded-lg">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  {isMindMode ? (
+                    <>
+                      <Brain className="h-4 w-4 text-purple-500" />
+                      Mind
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="h-4 w-4 text-blue-500" />
+                      Chat
+                    </>
+                  )}
+                </div>
+                <Switch
+                  checked={isMindMode}
+                  onCheckedChange={(checked) =>
+                    setMode(checked ? "mind" : "chat")
+                  }
+                  className="data-[state=checked]:bg-purple-500"
+                />
+              </div>
+            </div>
+
+            {/* Desktop: Full card */}
+            <Card className="border-dashed hidden sm:block">
+              <CardHeader className="pb-3 px-4 pt-4">
                 <CardTitle className="flex items-center gap-2 text-sm">
                   {isMindMode ? (
                     <>
@@ -276,15 +310,15 @@ export function AppSidebar() {
                     </>
                   )}
                 </CardTitle>
-                <CardDescription className="text-xs">
+                <CardDescription className="text-xs leading-relaxed">
                   {isMindMode
-                    ? "Visualize conversations as interactive mind maps with branching dialogues"
-                    : "Traditional linear chat interface for straightforward conversations"}
+                    ? "Interactive mind maps with branching dialogues"
+                    : "Traditional linear chat interface"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 px-4 pb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <MessageSquare className="h-3 w-3" />
                     <span>Chat</span>
                   </div>
@@ -295,7 +329,7 @@ export function AppSidebar() {
                     }
                     className="data-[state=checked]:bg-purple-500"
                   />
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Brain className="h-3 w-3" />
                     <span>Mind</span>
                   </div>
@@ -304,7 +338,7 @@ export function AppSidebar() {
                   <div className="mt-3 p-2 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
                     <div className="flex items-center gap-1 text-xs text-purple-700 dark:text-purple-300">
                       <GitBranch className="h-3 w-3" />
-                      <span>Branch conversations with multiple AI models</span>
+                      <span>Branch with multiple AI models</span>
                     </div>
                   </div>
                 )}
@@ -314,15 +348,17 @@ export function AppSidebar() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      <SidebarFooter className="border-t">
+      <SidebarFooter className="border-t p-2 sm:p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <ThemeSwitcher />
+            <div className="mb-2">
+              <ThemeSwitcher />
+            </div>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={logout} className="w-full">
+            <SidebarMenuButton onClick={logout} className="w-full h-9 sm:h-10">
               <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <span className="text-sm">Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
