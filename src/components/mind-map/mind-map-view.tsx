@@ -164,29 +164,31 @@ export function MindMapView({
         {/* Info Panel */}
         <Panel
           position="top-left"
-          className="bg-background/80 backdrop-blur-sm rounded-lg border p-4"
+          className="bg-background/80 backdrop-blur-sm rounded-lg border p-2 sm:p-4 max-w-[280px] sm:max-w-none"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Brain className="h-5 w-5 text-purple-500" />
-            <h3 className="font-semibold">Mind Map View</h3>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+              <h3 className="font-semibold text-sm sm:text-base">Mind Map</h3>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="outline" className="text-xs">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-sm text-muted-foreground">
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5">
               {totalNodes} nodes
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5">
               {userNodes} user
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5">
               {assistantNodes} AI
             </Badge>
           </div>
 
           {selectedNodeId && (
             <div className="mt-2 pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                Selected: {selectedNodeId}
+              <p className="text-xs text-muted-foreground truncate">
+                Selected: {selectedNodeId.slice(0, 8)}...
               </p>
             </div>
           )}
@@ -195,18 +197,19 @@ export function MindMapView({
         {/* Action Panel */}
         <Panel
           position="top-right"
-          className="bg-background/80 backdrop-blur-sm rounded-lg border p-4"
+          className="bg-background/80 backdrop-blur-sm rounded-lg border p-2 sm:p-4 max-w-[120px] sm:max-w-none"
         >
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="outline"
               onClick={() => selectedNodeId && onCreateBranch(selectedNodeId)}
               disabled={!selectedNodeId}
-              className="w-full"
+              className="w-full min-h-[36px] sm:min-h-auto text-xs sm:text-sm px-2 sm:px-3"
             >
-              <GitBranch className="h-4 w-4 mr-2" />
-              Create Branch
+              <GitBranch className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Create Branch</span>
+              <span className="sm:hidden">Branch</span>
             </Button>
 
             <Button
@@ -216,10 +219,11 @@ export function MindMapView({
                 selectedNodeId && onResumeConversation(selectedNodeId)
               }
               disabled={!selectedNodeId}
-              className="w-full"
+              className="w-full min-h-[36px] sm:min-h-auto text-xs sm:text-sm px-2 sm:px-3"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Continue Chat
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Continue Chat</span>
+              <span className="sm:hidden">Continue</span>
             </Button>
           </div>
         </Panel>
