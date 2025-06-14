@@ -60,6 +60,11 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
             .createSignedUrl(filePath, 3600); // 1 hour expiry
 
         if (signedUrlError) {
+          // Rollback: Delete the uploaded file to prevent orphaned files
+          await supabase.storage
+            .from("chat-attachments")
+            .remove([filePath]);
+          
           throw new Error(
             `Failed to generate signed URL for ${file.name}: ${signedUrlError.message}`
           );
