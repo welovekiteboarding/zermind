@@ -39,25 +39,6 @@ export const updateCollaborationSessionSchema = z.object({
   settings: z.record(z.unknown()).optional(),
 });
 
-// Collaboration session response schema
-export const collaborationSessionSchema = z.object({
-  id: z.string(),
-  chatId: z.string(),
-  activeSince: z.date(),
-  lastActivity: z.date(),
-  maxParticipants: z.number().nullable(),
-  settings: z.record(z.unknown()).nullable(),
-  participants: z.array(
-    z.object({
-      id: z.string(),
-      userId: z.string(),
-      role: participantRoleSchema,
-      joinedAt: z.date(),
-      lastActivity: z.date(),
-    })
-  ),
-});
-
 // Participant update schema
 export const updateParticipantSchema = z.object({
   participantId: z.string().min(1, "Participant ID is required"),
@@ -90,6 +71,8 @@ export const mindMapActionSchema = z.object({
     })
     .optional(),
   userId: z.string(),
+  userName: z.string(),
+  userColor: z.string(),
   timestamp: z.number(),
   data: z.record(z.unknown()).optional(),
 });
@@ -108,6 +91,7 @@ export const collaborativeUserSchema = z.object({
     .optional(),
   selectedNodeId: z.string().optional(),
   color: z.string(),
+  online_at: z.coerce.date(),
 });
 
 // Session permissions schema
@@ -129,6 +113,37 @@ export const collaborationSettingsSchema = z.object({
   conflictResolution: z
     .enum(["last-writer-wins", "manual", "auto-merge"])
     .default("last-writer-wins"),
+});
+
+// Collaboration session response schema
+export const collaborationSessionSchema = z.object({
+  id: z.string(),
+  chatId: z.string(),
+  activeSince: z.preprocess((val) => {
+    if (typeof val === "string") return new Date(val);
+    return val;
+  }, z.date()),
+  lastActivity: z.preprocess((val) => {
+    if (typeof val === "string") return new Date(val);
+    return val;
+  }, z.date()),
+  maxParticipants: z.number().nullable(),
+  settings: collaborationSettingsSchema.nullable(),
+  participants: z.array(
+    z.object({
+      id: z.string(),
+      userId: z.string(),
+      role: participantRoleSchema,
+      joinedAt: z.preprocess((val) => {
+        if (typeof val === "string") return new Date(val);
+        return val;
+      }, z.date()),
+      lastActivity: z.preprocess((val) => {
+        if (typeof val === "string") return new Date(val);
+        return val;
+      }, z.date()),
+    })
+  ),
 });
 
 // Export types
