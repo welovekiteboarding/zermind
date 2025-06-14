@@ -8,6 +8,7 @@ import { ResumeMessageInput } from "@/components/resume-message-input";
 import { CreateBranchInput } from "@/components/create-branch-input";
 import { CreateMultiModelBranch } from "@/components/create-multi-model-branch";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
+import { useAuthUser } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageSquare, ArrowLeft } from "lucide-react";
@@ -76,6 +77,7 @@ export function DualModeChat({
   chatTitle,
 }: DualModeChatProps) {
   const { mode } = useChatModeStore();
+  const { user } = useAuthUser();
   const [resumeFromNodeId, setResumeFromNodeId] = useState<string | null>(null);
   const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
     string | null
@@ -83,30 +85,35 @@ export function DualModeChat({
   const [createMultiModelFromNodeId, setCreateMultiModelFromNodeId] = useState<
     string | null
   >(null);
-  const [collaborationError, setCollaborationError] = useState(false);
+
+  // Get display name from user data with fallback
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.email) {
+      // Extract name from email (before @ symbol) as fallback
+      return user.email.split("@")[0];
+    }
+    return "User"; // Final fallback
+  };
 
   // Real-time collaboration hook - ALWAYS called at top level (Rules of Hooks)
   const collaborationState = useRealtimeCollaboration({
     chatId,
     userId,
-    userName: "User", // You would get this from user data
+    userName: getUserDisplayName(),
     onAction: (action) => {
-      if (collaborationError) return; // Ignore actions if there's an error
       console.log("Received collaborative action:", action);
       // Handle collaborative actions here
     },
     onPresenceChange: (users) => {
-      if (collaborationError) return; // Ignore presence changes if there's an error
       console.log("Collaboration presence changed:", users);
     },
   });
-
-  // Handle collaboration errors by monitoring the state
-  React.useEffect(() => {
-    if (!collaborationState) {
-      setCollaborationError(true);
-    }
-  }, [collaborationState]);
 
   // Safely extract values with defaults
   const { collaborativeUsers = [], isConnected: isRealtimeConnected = false } =
@@ -200,20 +207,18 @@ export function DualModeChat({
                 Mind Mode
               </Badge>
 
-              {/* Collaboration Controls - Only show if no error */}
-              {!collaborationError && (
-                <ErrorBoundary
-                  FallbackComponent={CollaborationErrorFallback}
-                  onError={handleCollaborationError}
-                >
-                  <CollaborationButton
-                    chatId={chatId}
-                    chatTitle={chatTitle}
-                    currentUserRole="owner"
-                    isRealtimeConnected={isRealtimeConnected}
-                  />
-                </ErrorBoundary>
-              )}
+              {/* Collaboration Controls */}
+              <ErrorBoundary
+                FallbackComponent={CollaborationErrorFallback}
+                onError={handleCollaborationError}
+              >
+                <CollaborationButton
+                  chatId={chatId}
+                  chatTitle={chatTitle}
+                  currentUserRole="owner"
+                  isRealtimeConnected={isRealtimeConnected}
+                />
+              </ErrorBoundary>
 
               {/* Clear Actions Button */}
               {hasActiveAction && (
@@ -232,8 +237,8 @@ export function DualModeChat({
           </div>
         </div>
 
-        {/* Collaboration Presence Indicator - Only show if no error */}
-        {!collaborationError && collaborativeUsers.length > 0 && (
+        {/* Collaboration Presence Indicator */}
+        {collaborativeUsers.length > 0 && (
           <ErrorBoundary
             FallbackComponent={CollaborationErrorFallback}
             onError={handleCollaborationError}
@@ -253,8 +258,8 @@ export function DualModeChat({
             onCreateMultiModelBranch={handleCreateMultiModelBranch}
           />
 
-          {/* Real-time Cursors Overlay - Only show if no error */}
-          {!collaborationError && collaborativeUsers.length > 0 && (
+          {/* Real-time Cursors Overlay */}
+          {collaborativeUsers.length > 0 && (
             <ErrorBoundary
               FallbackComponent={CollaborationErrorFallback}
               onError={handleCollaborationError}
@@ -322,20 +327,18 @@ export function DualModeChat({
               Chat Mode
             </Badge>
 
-            {/* Collaboration Controls - Only show if no error */}
-            {!collaborationError && (
-              <ErrorBoundary
-                FallbackComponent={CollaborationErrorFallback}
-                onError={handleCollaborationError}
-              >
-                <CollaborationButton
-                  chatId={chatId}
-                  chatTitle={chatTitle}
-                  currentUserRole="owner"
-                  isRealtimeConnected={isRealtimeConnected}
-                />
-              </ErrorBoundary>
-            )}
+            {/* Collaboration Controls */}
+            <ErrorBoundary
+              FallbackComponent={CollaborationErrorFallback}
+              onError={handleCollaborationError}
+            >
+              <CollaborationButton
+                chatId={chatId}
+                chatTitle={chatTitle}
+                currentUserRole="owner"
+                isRealtimeConnected={isRealtimeConnected}
+              />
+            </ErrorBoundary>
           </div>
         </div>
       </div>
