@@ -35,9 +35,7 @@ export function MessageAttachment({
     {}
   );
   // Store pending promises to prevent duplicate requests
-  const [pendingRefreshes, setPendingRefreshes] = useState<
-    Record<string, Promise<string>>
-  >({});
+  const pendingRefreshes = useRef<Record<string, Promise<string>>>({});
 
   // Create Supabase client once and reuse it
   const supabaseRef = useRef(createClient());
@@ -54,9 +52,9 @@ export function MessageAttachment({
     }
 
     // Check if there's already a pending request for this filePath
-    if (attachment.filePath in pendingRefreshes) {
+    if (attachment.filePath in pendingRefreshes.current) {
       console.log("Reusing pending refresh request for:", attachment.filePath);
-      return pendingRefreshes[attachment.filePath];
+      return pendingRefreshes.current[attachment.filePath];
     }
 
     // Create a new promise for this refresh request
@@ -81,19 +79,12 @@ export function MessageAttachment({
         return attachment.url;
       } finally {
         // Clean up the pending promise when done
-        setPendingRefreshes((prev) => {
-          const updated = { ...prev };
-          delete updated[attachment.filePath!];
-          return updated;
-        });
+        delete pendingRefreshes.current[attachment.filePath!];
       }
     })();
 
     // Store the promise to prevent duplicate requests
-    setPendingRefreshes((prev) => ({
-      ...prev,
-      [attachment.filePath!]: refreshPromise,
-    }));
+    pendingRefreshes.current[attachment.filePath!] = refreshPromise;
 
     return refreshPromise;
   };
