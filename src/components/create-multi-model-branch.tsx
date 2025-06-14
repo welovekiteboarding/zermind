@@ -345,7 +345,7 @@ function useMultiBranchingChats({
   const activeChats = useMemo(() => {
     const chats = [chat1, chat2, chat3, chat4];
     return chats.slice(0, selectedModels.length);
-  }, [chat1, chat2, chat3, chat4, selectedModels.length]);
+  }, [chat1, chat2, chat3, chat4, selectedModels]);
 
   const isAnyLoading = useMemo(
     () => activeChats.some((chat) => chat.isLoading),
