@@ -58,6 +58,11 @@ export function useBranchingChat({
         createdAt: message.createdAt || new Date(),
         model,
         attachments: [],
+        xPosition: 0,
+        yPosition: 0,
+        nodeType: "conversation",
+        isCollapsed: false,
+        isLocked: false,
       };
 
       try {
@@ -71,6 +76,11 @@ export function useBranchingChat({
             attachments: [],
             parentId: parentNodeId,
             branchName,
+            xPosition: 0,
+            yPosition: 0,
+            nodeType: "conversation",
+            isCollapsed: false,
+            isLocked: false,
           },
         });
 
@@ -128,6 +138,11 @@ export function useBranchingChat({
             attachments: [],
             parentId: parentNodeId,
             branchName,
+            xPosition: 0,
+            yPosition: 0,
+            nodeType: "conversation",
+            isCollapsed: false,
+            isLocked: false,
           },
         });
 

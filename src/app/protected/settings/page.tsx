@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ApiKeyManagement } from "@/components/api-key-management";
 import { DangerZone } from "@/components/danger-zone";
+import { CollaborationSettings } from "@/components/collaboration-settings";
 import { User, Settings, Shield, Database } from "lucide-react";
 
 export default async function SettingsPage() {
@@ -122,6 +123,9 @@ export default async function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Collaboration Settings */}
+      <CollaborationSettings />
 
       {/* Privacy & Security */}
       <Card>

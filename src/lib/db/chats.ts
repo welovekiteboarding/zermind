@@ -29,6 +29,8 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
       id: true,
       title: true,
       userId: true,
+      mode: true, // Added mode field
+      isCollaborative: true, // Added collaboration field
       createdAt: true,
       updatedAt: true,
       shareId: true,
@@ -163,7 +165,11 @@ export async function addMessage(
   content: string,
   model?: string,
   parentId?: string,
-  attachments?: Attachment[]
+  attachments?: Attachment[],
+  xPosition?: number,
+  yPosition?: number,
+  nodeType?: "conversation" | "branching_point" | "insight",
+  branchName?: string
 ) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -177,7 +183,7 @@ export async function addMessage(
         },
       });
 
-      // Create the message with attachments
+      // Create the message with attachments and mind map positioning
       return await tx.message.create({
         data: {
           chatId,
@@ -185,6 +191,10 @@ export async function addMessage(
           content,
           model,
           parentId,
+          branchName,
+          xPosition: xPosition || 0,
+          yPosition: yPosition || 0,
+          nodeType: nodeType || "conversation",
           attachments:
             attachments && attachments.length > 0
               ? JSON.stringify(attachments)
@@ -391,5 +401,53 @@ export async function removeShareLink(
   } catch (error) {
     console.error("Failed to remove share link:", error);
     return false;
+  }
+}
+
+// Check if user is the owner of a chat
+export async function isChatOwner(
+  chatId: string,
+  userId: string
+): Promise<boolean> {
+  try {
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: chatId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return !!chat;
+  } catch (error) {
+    console.error("Failed to check chat ownership:", error);
+    return false;
+  }
+}
+
+// Get basic chat info including collaborative status
+export async function getChatInfo(chatId: string): Promise<{
+  id: string;
+  userId: string;
+  isCollaborative: boolean;
+  title: string | null;
+} | null> {
+  try {
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: chatId,
+      },
+      select: {
+        id: true,
+        userId: true,
+        isCollaborative: true,
+        title: true,
+      },
+    });
+    return chat;
+  } catch (error) {
+    console.error("Failed to get chat info:", error);
+    return null;
   }
 }

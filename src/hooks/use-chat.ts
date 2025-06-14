@@ -53,6 +53,11 @@ export function useChat({
         createdAt: message.createdAt || new Date(),
         model,
         attachments: [],
+        xPosition: 0,
+        yPosition: 0,
+        nodeType: "conversation",
+        isCollapsed: false,
+        isLocked: false,
       };
       onFinish?.(formattedMessage);
     },
@@ -77,6 +82,11 @@ export function useChat({
           : new Date(msg.createdAt || Date.now()),
       model: msg.role === "assistant" ? model : undefined,
       attachments: messageWithAttachments.attachments || [],
+      xPosition: 0,
+      yPosition: 0,
+      nodeType: "conversation",
+      isCollapsed: false,
+      isLocked: false,
     };
   });
 

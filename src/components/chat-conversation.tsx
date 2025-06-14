@@ -120,6 +120,11 @@ export function ChatConversation({
             content: message.content,
             model: message.model,
             attachments: [], // Assistant messages don't have attachments
+            xPosition: 0,
+            yPosition: 0,
+            nodeType: "conversation",
+            isCollapsed: false,
+            isLocked: false,
           },
         });
         console.log("Message finished:", message);
@@ -212,6 +217,11 @@ export function ChatConversation({
             content: userMessage,
             model: null, // User messages don't have a model
             attachments,
+            xPosition: 0,
+            yPosition: 0,
+            nodeType: "conversation",
+            isCollapsed: false,
+            isLocked: false,
           },
         });
       } catch (error) {

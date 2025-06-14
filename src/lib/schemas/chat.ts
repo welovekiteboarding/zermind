@@ -21,6 +21,15 @@ export const MessageSchema = z.object({
   attachments: z.array(AttachmentSchema).default([]),
   parentId: z.string().nullish(), // For conversation branching
   branchName: z.string().nullish(), // User-defined branch labels
+  xPosition: z.number().default(0), // Mind map coordinates
+  yPosition: z.number().default(0), // Mind map coordinates
+  nodeType: z
+    .enum(["conversation", "branching_point", "insight"])
+    .default("conversation"),
+  isCollapsed: z.boolean().default(false), // For mind map UI state
+  isLocked: z.boolean().default(false), // For preventing concurrent edits
+  lastEditedBy: z.string().nullish(), // User ID who last edited
+  editedAt: z.coerce.date().nullish(), // When last edited
 });
 
 // Message creation schema (for API requests)
@@ -31,6 +40,12 @@ export const CreateMessageSchema = z.object({
   attachments: z.array(AttachmentSchema).optional().default([]),
   parentId: z.string().optional(), // For conversation branching
   branchName: z.string().optional(), // User-defined branch labels
+  xPosition: z.number().optional().default(0), // Mind map coordinates
+  yPosition: z.number().optional().default(0), // Mind map coordinates
+  nodeType: z
+    .enum(["conversation", "branching_point", "insight"])
+    .optional()
+    .default("conversation"),
 });
 
 // Chat schema
@@ -38,6 +53,9 @@ export const ChatSchema = z.object({
   id: z.string(),
   title: z.string().nullable(),
   userId: z.string(),
+  mode: z.enum(["chat", "mind"]).default("chat"), // Track interaction mode
+  isCollaborative: z.boolean().default(false), // For real-time collaboration
+  templateId: z.string().nullish(), // Reference to conversation templates
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
   shareId: z.string().nullable().optional(),

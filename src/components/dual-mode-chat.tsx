@@ -9,6 +9,12 @@ import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageSquare, ArrowLeft } from "lucide-react";
+import { CollaborationButton } from "@/components/collaboration/collaboration-button";
+import {
+  RealtimeCursors,
+  CollaborationPresence,
+} from "@/components/mind-map/realtime-cursors";
+import { useRealtimeCollaboration } from "@/hooks/use-realtime-collaboration";
 
 interface Message {
   id: string;
@@ -19,6 +25,11 @@ interface Message {
   branchName?: string;
   xPosition?: number;
   yPosition?: number;
+  nodeType?: "conversation" | "branching_point" | "insight";
+  isCollapsed?: boolean;
+  isLocked?: boolean;
+  lastEditedBy?: string;
+  editedAt?: string;
   createdAt: string;
   attachments?: Array<{
     id: string;
@@ -49,6 +60,21 @@ export function DualModeChat({
   const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
     string | null
   >(null);
+
+  // Real-time collaboration hook
+  const { collaborativeUsers, isConnected: isRealtimeConnected } =
+    useRealtimeCollaboration({
+      chatId,
+      userId,
+      userName: "User", // You would get this from user data
+      onAction: (action) => {
+        console.log("Received collaborative action:", action);
+        // Handle collaborative actions here
+      },
+      onPresenceChange: (users) => {
+        console.log("Collaboration presence changed:", users);
+      },
+    });
 
   // Handle resuming conversation from a specific node
   const handleResumeConversation = useCallback((nodeId: string) => {
@@ -111,6 +137,14 @@ export function DualModeChat({
                 Mind Mode
               </Badge>
 
+              {/* Collaboration Controls */}
+              <CollaborationButton
+                chatId={chatId}
+                chatTitle={chatTitle}
+                currentUserRole="owner"
+                isRealtimeConnected={isRealtimeConnected}
+              />
+
               {(resumeFromNodeId || createBranchFromNodeId) && (
                 <Button
                   size="sm"
@@ -128,13 +162,23 @@ export function DualModeChat({
           </div>
         </div>
 
+        {/* Collaboration Presence Indicator */}
+        {collaborativeUsers.length > 0 && (
+          <div className="px-4 py-2 border-b bg-muted/30">
+            <CollaborationPresence users={collaborativeUsers} />
+          </div>
+        )}
+
         {/* Mind Map View */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
           <MindMapView
             messages={mindMapMessages}
             onResumeConversation={handleResumeConversation}
             onCreateBranch={handleCreateBranch}
           />
+
+          {/* Real-time Cursors Overlay */}
+          <RealtimeCursors users={collaborativeUsers} />
         </div>
 
         {/* Resume Conversation Panel */}
@@ -176,13 +220,23 @@ export function DualModeChat({
             </div>
           </div>
 
-          <Badge
-            variant="secondary"
-            className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-          >
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Chat Mode
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+            >
+              <MessageSquare className="h-3 w-3 mr-1" />
+              Chat Mode
+            </Badge>
+
+            {/* Collaboration Controls */}
+            <CollaborationButton
+              chatId={chatId}
+              chatTitle={chatTitle}
+              currentUserRole="owner"
+              isRealtimeConnected={isRealtimeConnected}
+            />
+          </div>
         </div>
       </div>
 
@@ -195,6 +249,12 @@ export function DualModeChat({
             role: msg.role as "user" | "assistant",
             createdAt: new Date(msg.createdAt),
             attachments: msg.attachments || [],
+            xPosition: msg.xPosition || 0,
+            yPosition: msg.yPosition || 0,
+            nodeType: msg.nodeType || "conversation",
+            isCollapsed: msg.isCollapsed || false,
+            isLocked: msg.isLocked || false,
+            editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined,
           }))}
           userId={userId}
           chatTitle={chatTitle}
