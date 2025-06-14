@@ -113,7 +113,6 @@ function useMultiBranchingChats({
   initialContext,
   selectedModels,
   branchName,
-  modelStatuses,
   setModelStatuses,
   onBranchCreated,
 }: {
@@ -122,7 +121,6 @@ function useMultiBranchingChats({
   initialContext: Message[];
   selectedModels: string[];
   branchName: string;
-  modelStatuses: ModelBranchStatus[];
   setModelStatuses: React.Dispatch<React.SetStateAction<ModelBranchStatus[]>>;
   onBranchCreated?: () => void;
 }) {
@@ -160,13 +158,23 @@ function useMultiBranchingChats({
     },
     onError: (error) => {
       if (selectedModels[0]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[0]
-              ? { ...status, status: "error", error: error.message }
+              ? { ...status, status: "error" as const, error: error.message }
               : status
-          )
-        );
+          );
+
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
   });
@@ -183,32 +191,44 @@ function useMultiBranchingChats({
       )} Response`,
     onFinish: () => {
       if (selectedModels[1]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[1]
-              ? { ...status, status: "success" }
+              ? { ...status, status: "success" as const }
               : status
-          )
-        );
+          );
 
-        // Check if all models are done
-        const allDone = modelStatuses.every(
-          (s) => s.status === "success" || s.status === "error"
-        );
-        if (allDone) {
-          onBranchCreated?.();
-        }
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
     onError: (error) => {
       if (selectedModels[1]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[1]
-              ? { ...status, status: "error", error: error.message }
+              ? { ...status, status: "error" as const, error: error.message }
               : status
-          )
-        );
+          );
+
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
   });
@@ -225,32 +245,44 @@ function useMultiBranchingChats({
       )} Response`,
     onFinish: () => {
       if (selectedModels[2]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[2]
-              ? { ...status, status: "success" }
+              ? { ...status, status: "success" as const }
               : status
-          )
-        );
+          );
 
-        // Check if all models are done
-        const allDone = modelStatuses.every(
-          (s) => s.status === "success" || s.status === "error"
-        );
-        if (allDone) {
-          onBranchCreated?.();
-        }
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
     onError: (error) => {
       if (selectedModels[2]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[2]
-              ? { ...status, status: "error", error: error.message }
+              ? { ...status, status: "error" as const, error: error.message }
               : status
-          )
-        );
+          );
+
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
   });
@@ -267,32 +299,44 @@ function useMultiBranchingChats({
       )} Response`,
     onFinish: () => {
       if (selectedModels[3]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[3]
-              ? { ...status, status: "success" }
+              ? { ...status, status: "success" as const }
               : status
-          )
-        );
+          );
 
-        // Check if all models are done
-        const allDone = modelStatuses.every(
-          (s) => s.status === "success" || s.status === "error"
-        );
-        if (allDone) {
-          onBranchCreated?.();
-        }
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
     onError: (error) => {
       if (selectedModels[3]) {
-        setModelStatuses((prev) =>
-          prev.map((status) =>
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
             status.model === selectedModels[3]
-              ? { ...status, status: "error", error: error.message }
+              ? { ...status, status: "error" as const, error: error.message }
               : status
-          )
-        );
+          );
+
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
       }
     },
   });
@@ -382,7 +426,6 @@ export function CreateMultiModelBranch({
       initialContext: context,
       selectedModels: form.watch("selectedModels"),
       branchName: form.watch("branchName")?.trim() || "",
-      modelStatuses,
       setModelStatuses,
       onBranchCreated,
     });
