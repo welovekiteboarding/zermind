@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { invitationRequestSchema } from "@/lib/schemas/collaboration";
 
 // Send collaboration invitation (placeholder implementation)
 export async function POST(request: NextRequest) {
@@ -14,7 +15,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { chatId, inviteeEmail, role, chatTitle } = await request.json();
+    // Parse and validate request body
+    const body = await request.json();
+    const validationResult = invitationRequestSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Invalid request data", 
+          details: validationResult.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        }, 
+        { status: 400 }
+      );
+    }
+
+    const { chatId, inviteeEmail, role, chatTitle } = validationResult.data;
 
     // Verify user has access to the chat
     const { data: chat, error: chatError } = await supabase

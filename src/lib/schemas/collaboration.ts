@@ -7,6 +7,17 @@ export const participantRoleSchema = z.enum([
   "viewer",
 ]);
 
+// Invitation role enum (subset of participant roles)
+export const invitationRoleSchema = z.enum(["collaborator", "viewer"]);
+
+// Invitation request schema for API validation
+export const invitationRequestSchema = z.object({
+  chatId: z.string().uuid("Chat ID must be a valid UUID"),
+  inviteeEmail: z.string().email("Must be a valid email address"),
+  role: invitationRoleSchema,
+  chatTitle: z.string().optional(),
+});
+
 // Collaboration session creation schema
 export const createCollaborationSessionSchema = z.object({
   chatId: z.string().min(1, "Chat ID is required"),
@@ -122,6 +133,8 @@ export const collaborationSettingsSchema = z.object({
 
 // Export types
 export type ParticipantRole = z.infer<typeof participantRoleSchema>;
+export type InvitationRole = z.infer<typeof invitationRoleSchema>;
+export type InvitationRequest = z.infer<typeof invitationRequestSchema>;
 export type CreateCollaborationSession = z.infer<
   typeof createCollaborationSessionSchema
 >;
