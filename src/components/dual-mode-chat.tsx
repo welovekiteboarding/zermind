@@ -5,6 +5,7 @@ import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
 import { ResumeMessageInput } from "@/components/resume-message-input";
 import { CreateBranchInput } from "@/components/create-branch-input";
+import { CreateMultiModelBranch } from "@/components/create-multi-model-branch";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +50,26 @@ interface DualModeChatProps {
   chatTitle?: string;
 }
 
+// Error Boundary Component for Collaboration Features
+function CollaborationErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+
+  React.useEffect(() => {
+    const handleError = () => {
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
+  if (hasError) {
+    return null; // Silently fail collaboration features
+  }
+
+  return <>{children}</>;
+}
+
 export function DualModeChat({
   chatId,
   initialMessages,
@@ -60,26 +81,45 @@ export function DualModeChat({
   const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
     string | null
   >(null);
+  const [createMultiModelFromNodeId, setCreateMultiModelFromNodeId] = useState<
+    string | null
+  >(null);
+  const [collaborationError, setCollaborationError] = useState(false);
 
-  // Real-time collaboration hook
-  const { collaborativeUsers, isConnected: isRealtimeConnected } =
-    useRealtimeCollaboration({
-      chatId,
-      userId,
-      userName: "User", // You would get this from user data
-      onAction: (action) => {
-        console.log("Received collaborative action:", action);
-        // Handle collaborative actions here
-      },
-      onPresenceChange: (users) => {
-        console.log("Collaboration presence changed:", users);
-      },
-    });
+  // Real-time collaboration hook - ALWAYS called at top level (Rules of Hooks)
+  const collaborationState = useRealtimeCollaboration({
+    chatId,
+    userId,
+    userName: "User", // You would get this from user data
+    onAction: (action) => {
+      if (collaborationError) return; // Ignore actions if there's an error
+      console.log("Received collaborative action:", action);
+      // Handle collaborative actions here
+    },
+    onPresenceChange: (users) => {
+      if (collaborationError) return; // Ignore presence changes if there's an error
+      console.log("Collaboration presence changed:", users);
+    },
+  });
+
+  // Handle collaboration errors by monitoring the state
+  React.useEffect(() => {
+    if (!collaborationState) {
+      setCollaborationError(true);
+    }
+  }, [collaborationState]);
+
+  // Safely extract values with defaults
+  const { 
+    collaborativeUsers = [], 
+    isConnected: isRealtimeConnected = false 
+  } = collaborationState || { collaborativeUsers: [], isConnected: false };
 
   // Handle resuming conversation from a specific node
   const handleResumeConversation = useCallback((nodeId: string) => {
     setResumeFromNodeId(nodeId);
     setCreateBranchFromNodeId(null); // Clear branch creation if active
+    setCreateMultiModelFromNodeId(null); // Clear multi-model creation if active
     console.log("Resuming conversation from node:", nodeId);
   }, []);
 
@@ -87,7 +127,16 @@ export function DualModeChat({
   const handleCreateBranch = useCallback((parentNodeId: string) => {
     setCreateBranchFromNodeId(parentNodeId);
     setResumeFromNodeId(null); // Clear resume if active
+    setCreateMultiModelFromNodeId(null); // Clear multi-model creation if active
     console.log("Creating branch from node:", parentNodeId);
+  }, []);
+
+  // Handle creating a multi-model comparison branch
+  const handleCreateMultiModelBranch = useCallback((parentNodeId: string) => {
+    setCreateMultiModelFromNodeId(parentNodeId);
+    setResumeFromNodeId(null); // Clear resume if active
+    setCreateBranchFromNodeId(null); // Clear single branch creation if active
+    console.log("Creating multi-model branch from node:", parentNodeId);
   }, []);
 
   // Handle successful message sent in resume mode
@@ -103,12 +152,28 @@ export function DualModeChat({
     console.log("Branch created successfully");
   }, []);
 
+  // Handle successful multi-model branch creation
+  const handleMultiModelBranchCreated = useCallback(() => {
+    // Refresh the mind map to show new multi-model branches
+    console.log("Multi-model branch created successfully");
+  }, []);
+
+  // Clear all active actions
+  const clearAllActions = useCallback(() => {
+    setResumeFromNodeId(null);
+    setCreateBranchFromNodeId(null);
+    setCreateMultiModelFromNodeId(null);
+  }, []);
+
   // Convert traditional messages to mind map format
   const mindMapMessages = initialMessages.map((msg, index) => ({
     ...msg,
     xPosition: msg.xPosition || (index % 3) * 400,
     yPosition: msg.yPosition || Math.floor(index / 3) * 250,
   }));
+
+  // Check if any action is active
+  const hasActiveAction = resumeFromNodeId || createBranchFromNodeId || createMultiModelFromNodeId;
 
   if (mode === "mind") {
     return (
@@ -137,36 +202,42 @@ export function DualModeChat({
                 Mind Mode
               </Badge>
 
-              {/* Collaboration Controls */}
-              <CollaborationButton
-                chatId={chatId}
-                chatTitle={chatTitle}
-                currentUserRole="owner"
-                isRealtimeConnected={isRealtimeConnected}
-              />
+              {/* Collaboration Controls - Only show if no error */}
+              {!collaborationError && (
+                <CollaborationErrorBoundary>
+                  <CollaborationButton
+                    chatId={chatId}
+                    chatTitle={chatTitle}
+                    currentUserRole="owner"
+                    isRealtimeConnected={isRealtimeConnected}
+                  />
+                </CollaborationErrorBoundary>
+              )}
 
-              {(resumeFromNodeId || createBranchFromNodeId) && (
+              {/* Clear Actions Button */}
+              {hasActiveAction && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    setResumeFromNodeId(null);
-                    setCreateBranchFromNodeId(null);
-                  }}
+                  onClick={clearAllActions}
+                  className="flex items-center gap-1"
                 >
-                  <ArrowLeft className="h-3 w-3 mr-1" />
-                  Clear Action
+                  <ArrowLeft className="h-3 w-3" />
+                  <span className="hidden sm:inline">Clear Action</span>
+                  <span className="sm:hidden">Clear</span>
                 </Button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Collaboration Presence Indicator */}
-        {collaborativeUsers.length > 0 && (
-          <div className="px-4 py-2 border-b bg-muted/30">
-            <CollaborationPresence users={collaborativeUsers} />
-          </div>
+        {/* Collaboration Presence Indicator - Only show if no error */}
+        {!collaborationError && collaborativeUsers.length > 0 && (
+          <CollaborationErrorBoundary>
+            <div className="px-4 py-2 border-b bg-muted/30">
+              <CollaborationPresence users={collaborativeUsers} />
+            </div>
+          </CollaborationErrorBoundary>
         )}
 
         {/* Mind Map View */}
@@ -175,10 +246,15 @@ export function DualModeChat({
             messages={mindMapMessages}
             onResumeConversation={handleResumeConversation}
             onCreateBranch={handleCreateBranch}
+            onCreateMultiModelBranch={handleCreateMultiModelBranch}
           />
 
-          {/* Real-time Cursors Overlay */}
-          <RealtimeCursors users={collaborativeUsers} />
+          {/* Real-time Cursors Overlay - Only show if no error */}
+          {!collaborationError && collaborativeUsers.length > 0 && (
+            <CollaborationErrorBoundary>
+              <RealtimeCursors users={collaborativeUsers} />
+            </CollaborationErrorBoundary>
+          )}
         </div>
 
         {/* Resume Conversation Panel */}
@@ -198,6 +274,16 @@ export function DualModeChat({
             parentNodeId={createBranchFromNodeId}
             onClose={() => setCreateBranchFromNodeId(null)}
             onBranchCreated={handleBranchCreated}
+          />
+        )}
+
+        {/* Create Multi-Model Branch Panel */}
+        {createMultiModelFromNodeId && (
+          <CreateMultiModelBranch
+            chatId={chatId}
+            parentNodeId={createMultiModelFromNodeId}
+            onClose={() => setCreateMultiModelFromNodeId(null)}
+            onBranchCreated={handleMultiModelBranchCreated}
           />
         )}
       </div>
@@ -229,13 +315,17 @@ export function DualModeChat({
               Chat Mode
             </Badge>
 
-            {/* Collaboration Controls */}
-            <CollaborationButton
-              chatId={chatId}
-              chatTitle={chatTitle}
-              currentUserRole="owner"
-              isRealtimeConnected={isRealtimeConnected}
-            />
+            {/* Collaboration Controls - Only show if no error */}
+            {!collaborationError && (
+              <CollaborationErrorBoundary>
+                <CollaborationButton
+                  chatId={chatId}
+                  chatTitle={chatTitle}
+                  currentUserRole="owner"
+                  isRealtimeConnected={isRealtimeConnected}
+                />
+              </CollaborationErrorBoundary>
+            )}
           </div>
         </div>
       </div>

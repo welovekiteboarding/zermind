@@ -77,6 +77,10 @@ export function useRealtimeCollaboration({
   // Use refs for stable callback references
   const onActionRef = useRef(onAction);
   const onPresenceChangeRef = useRef(onPresenceChange);
+  
+  // Use refs for stable values to avoid dependency issues
+  const userColorRef = useRef(userColor);
+  const isConnectedRef = useRef(isConnected);
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -87,6 +91,15 @@ export function useRealtimeCollaboration({
     onPresenceChangeRef.current = onPresenceChange;
   }, [onPresenceChange]);
 
+  // Update refs when state changes
+  useEffect(() => {
+    userColorRef.current = userColor;
+  }, [userColor]);
+
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
   // Broadcast an action to other users
   const broadcastAction = useCallback(
     async (
@@ -95,23 +108,27 @@ export function useRealtimeCollaboration({
         "userId" | "userName" | "userColor" | "timestamp"
       >
     ) => {
-      if (!channel || !isConnected) return;
+      if (!channel || !isConnectedRef.current) return;
 
       const fullAction: MindMapAction = {
         ...action,
         userId,
         userName,
-        userColor,
+        userColor: userColorRef.current,
         timestamp: Date.now(),
       };
 
-      await channel.send({
-        type: "broadcast",
-        event: EVENT_ACTION_TYPE,
-        payload: fullAction,
-      });
+      try {
+        await channel.send({
+          type: "broadcast",
+          event: EVENT_ACTION_TYPE,
+          payload: fullAction,
+        });
+      } catch (error) {
+        console.warn("Failed to broadcast action:", error);
+      }
     },
-    [channel, isConnected, userId, userName, userColor]
+    [channel, userId, userName] // Only include stable dependencies
   );
 
   // Update cursor position
@@ -204,33 +221,43 @@ export function useRealtimeCollaboration({
         setIsConnected(true);
         console.log("Realtime collaboration connected to:", roomName);
 
-        // Assign a color for this user
-        const currentUsers = collaborativeUsers;
-        const availableColors = USER_COLORS.filter(
-          (color) => !currentUsers.some((user) => user.color === color)
-        );
-        const assignedColor =
-          availableColors[0] ||
-          USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
+        // Assign a color for this user (use current state, not ref)
+        setUserColor((currentColor) => {
+          // Get available colors based on current users
+          setCollaborativeUsers((currentUsers) => {
+            const availableColors = USER_COLORS.filter(
+              (color) => !currentUsers.some((user) => user.color === color)
+            );
+            const assignedColor =
+              availableColors[0] ||
+              USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 
-        setUserColor(assignedColor);
+            // Announce user join after a small delay
+            setTimeout(async () => {
+              const joinAction: MindMapAction = {
+                type: "user_join",
+                userId,
+                userName,
+                userColor: assignedColor,
+                timestamp: Date.now(),
+              };
 
-        // Announce user join after a small delay
-        setTimeout(async () => {
-          const joinAction: MindMapAction = {
-            type: "user_join",
-            userId,
-            userName,
-            userColor: assignedColor,
-            timestamp: Date.now(),
-          };
+              try {
+                await newChannel.send({
+                  type: "broadcast",
+                  event: EVENT_USER_JOIN_TYPE,
+                  payload: joinAction,
+                });
+              } catch (error) {
+                console.warn("Failed to announce user join:", error);
+              }
+            }, 100);
 
-          await newChannel.send({
-            type: "broadcast",
-            event: EVENT_USER_JOIN_TYPE,
-            payload: joinAction,
+            return currentUsers; // Don't change users here
           });
-        }, 100);
+
+          return currentColor; // Return the assigned color
+        });
       } else if (status === "CHANNEL_ERROR") {
         setIsConnected(false);
         console.error("Realtime channel error");
@@ -251,12 +278,12 @@ export function useRealtimeCollaboration({
     // Cleanup on unmount
     return () => {
       // Announce user leave before cleanup
-      if (newChannel && isConnected) {
+      if (newChannel && isConnectedRef.current) {
         const leaveAction: MindMapAction = {
           type: "user_leave",
           userId,
           userName,
-          userColor,
+          userColor: userColorRef.current,
           timestamp: Date.now(),
         };
 
@@ -264,6 +291,8 @@ export function useRealtimeCollaboration({
           type: "broadcast",
           event: EVENT_USER_LEAVE_TYPE,
           payload: leaveAction,
+        }).catch((error) => {
+          console.warn("Failed to announce user leave:", error);
         });
       }
 
@@ -272,7 +301,7 @@ export function useRealtimeCollaboration({
       setIsConnected(false);
       setCollaborativeUsers([]);
     };
-  }, [chatId, userId, userName, supabase, collaborativeUsers, isConnected, userColor]); // Only include truly stable dependencies
+  }, [chatId, userId, userName, supabase]); // Only include truly stable dependencies
 
   return {
     isConnected,

@@ -35,7 +35,6 @@ import {
   Eye,
   Edit,
   MoreHorizontal,
-  Activity,
   X,
   LogOut,
   Wifi,
@@ -43,6 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 
 interface CollaborationButtonProps {
   chatId: string;
@@ -50,7 +50,7 @@ interface CollaborationButtonProps {
   isCollaborative?: boolean;
   currentUserRole?: "owner" | "collaborator" | "viewer";
   className?: string;
-  isRealtimeConnected?: boolean; // Add realtime connection status
+  isRealtimeConnected?: boolean;
 }
 
 interface CollaborationSession {
@@ -74,67 +74,65 @@ export function CollaborationButton({
   const [inviteRole, setInviteRole] = useState<"collaborator" | "viewer">(
     "collaborator"
   );
+  const [hasActiveSession, setHasActiveSession] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch current collaboration session
+  // Only fetch session if we think there might be one active
+  // This prevents the premature API calls that cause the button to get stuck
   const {
     data: session,
     isLoading,
-    error,
   } = useQuery({
     queryKey: ["collaboration-session", chatId],
     queryFn: async (): Promise<CollaborationSession | null> => {
-      try {
-        const response = await fetch(`/api/collaboration/${chatId}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // Shorter timeout
 
-        // Handle different response statuses
+      try {
+        const response = await fetch(`/api/collaboration/${chatId}`, {
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+
+        clearTimeout(timeoutId);
+
         if (response.status === 404) {
-          // No active session found - this is expected
+          // No session found - update our state
+          setHasActiveSession(false);
           return null;
         }
 
         if (!response.ok) {
-          // For network errors or other issues, throw to trigger retry
-          const errorText = await response.text().catch(() => response.statusText);
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
+          console.warn(`Collaboration API returned ${response.status}`);
+          setHasActiveSession(false);
+          return null;
         }
 
         const data = await response.json();
-        return data.session || null; // Ensure we return null instead of undefined
+        const sessionData = data.session || null;
+        
+        // Update our state based on whether we found a session
+        setHasActiveSession(!!sessionData);
+        
+        return sessionData;
       } catch (error) {
-        // Only log non-404 errors as they're unexpected
-        if (error instanceof Error && !error.message.includes("404")) {
-          console.error("Error fetching collaboration session:", error);
-        }
-        
-        // For network errors (fetch failures), re-throw to trigger retry
-        if (error instanceof TypeError && error.message.includes("fetch")) {
-          throw error;
-        }
-        
-        // For other errors, return null (no session)
+        clearTimeout(timeoutId);
+        console.warn('Collaboration query failed:', error);
+        setHasActiveSession(false);
         return null;
       }
     },
-    refetchInterval: (data) => {
-      // Only refetch if we have an active session, otherwise rely on realtime updates
-      return data ? 30000 : false;
-    },
-    retry: (failureCount, error) => {
-      // Retry on network errors but not on application errors
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        return failureCount < 3;
-      }
-      return false;
-    },
-    // Don't show errors for expected 404s or network issues
+    // Key change: Only enable the query if we think there might be a session
+    enabled: hasActiveSession && !!chatId,
+    refetchInterval: hasActiveSession ? 30000 : false, // Only refetch if session is active
+    retry: false,
+    staleTime: 15000,
+    gcTime: 30000,
     meta: {
       errorMessage: false,
     },
-    // Add a stale time to prevent excessive refetching
-    staleTime: 10000, // 10 seconds
-    // Set a reasonable network retry interval
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Start collaboration session
@@ -154,9 +152,14 @@ export function CollaborationButton({
       return response.json();
     },
     onSuccess: () => {
+      // Mark that we now have an active session
+      setHasActiveSession(true);
+      
+      // Invalidate and refetch the session query
       queryClient.invalidateQueries({
         queryKey: ["collaboration-session", chatId],
       });
+      
       toast.success("Collaboration session started!");
     },
     onError: (error: Error) => {
@@ -182,9 +185,13 @@ export function CollaborationButton({
       }
     },
     onSuccess: () => {
+      // Mark that we no longer have an active session
+      setHasActiveSession(false);
+      
       queryClient.invalidateQueries({
         queryKey: ["collaboration-session", chatId],
       });
+      
       toast.success("Left collaboration session");
     },
     onError: (error: Error) => {
@@ -211,9 +218,13 @@ export function CollaborationButton({
       }
     },
     onSuccess: () => {
+      // Mark that we no longer have an active session
+      setHasActiveSession(false);
+      
       queryClient.invalidateQueries({
         queryKey: ["collaboration-session", chatId],
       });
+      
       toast.success("Collaboration session ended for all participants");
     },
     onError: (error: Error) => {
@@ -288,20 +299,8 @@ export function CollaborationButton({
     }
   };
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <Button disabled size="sm" variant="outline" className={className}>
-        <Activity className="h-4 w-4 animate-spin mr-2" />
-        Loading...
-      </Button>
-    );
-  }
-
-  // Show error state only for unexpected errors (not network failures or 404s)
-  if (error && !session && !(error instanceof TypeError)) {
-    console.warn("Collaboration session error:", error);
-    // For non-network errors, still show the start button but with warning
+  // If we don't have an active session and we're not loading, show the start button
+  if (!hasActiveSession && !isLoading) {
     return (
       <Button
         onClick={() => startCollaboration.mutate()}
@@ -309,37 +308,44 @@ export function CollaborationButton({
         size="sm"
         variant="outline"
         className={className}
-        title="Unable to check collaboration status. You can still try to start collaboration."
       >
         <Users className="h-4 w-4 mr-2" />
-        Start Collaboration
+        <span className="hidden sm:inline">
+          {startCollaboration.isPending ? "Starting..." : "Collaborate"}
+        </span>
+        <span className="sm:hidden">
+          {startCollaboration.isPending ? "..." : "Collab"}
+        </span>
       </Button>
     );
   }
 
-  return (
-    <>
-      {/* Main Collaboration Button */}
-      {!session ? (
-        <Button
-          onClick={() => startCollaboration.mutate()}
-          disabled={startCollaboration.isPending}
-          size="sm"
-          variant="outline"
-          className={className}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          {startCollaboration.isPending ? "Starting..." : "Start Collaboration"}
-        </Button>
-      ) : (
+  // If we're loading (only when hasActiveSession is true), show loading state
+  if (isLoading) {
+    return (
+      <Button disabled size="sm" variant="outline" className={className}>
+        <Users className="h-4 w-4 mr-2" />
+        <span className="hidden sm:inline">Loading...</span>
+        <span className="sm:hidden">...</span>
+      </Button>
+    );
+  }
+
+  // If we have a session, show the active collaboration dropdown
+  if (session) {
+    return (
+      <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline" className={className}>
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="flex items-center gap-1">
-                  {session.participantCount}
-                  {session.participantCount === 1 ? " user" : " users"}
+                  <span className="hidden sm:inline">
+                    {session.participantCount}
+                    {session.participantCount === 1 ? " user" : " users"}
+                  </span>
+                  <span className="sm:hidden">{session.participantCount}</span>
                   {getRoleIcon(currentUserRole)}
                 </span>
                 {/* Realtime connection indicator */}
@@ -415,88 +421,107 @@ export function CollaborationButton({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )}
 
-      {/* Invitation Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invite to Collaboration</DialogTitle>
-            <DialogDescription>
-              Invite others to collaborate on &ldquo;{chatTitle}&rdquo;
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="colleague@example.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    sendInvitation();
+        {/* Invitation Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Invite to Collaboration</DialogTitle>
+              <DialogDescription>
+                Invite others to collaborate on &ldquo;{chatTitle}&rdquo;
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="colleague@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      sendInvitation();
+                    }
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={inviteRole}
+                  onValueChange={(value: "collaborator" | "viewer") =>
+                    setInviteRole(value)
                   }
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={inviteRole}
-                onValueChange={(value: "collaborator" | "viewer") =>
-                  setInviteRole(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="collaborator">
-                    <div className="flex items-center gap-2">
-                      <Edit className="h-4 w-4" />
-                      <div>
-                        <p className="font-medium">Collaborator</p>
-                        <p className="text-xs text-muted-foreground">
-                          Can edit and add content
-                        </p>
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="collaborator">
+                      <div className="flex items-center gap-2">
+                        <Edit className="h-4 w-4" />
+                        <div>
+                          <p className="font-medium">Collaborator</p>
+                          <p className="text-xs text-muted-foreground">
+                            Can edit and add content
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="viewer">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4" />
-                      <div>
-                        <p className="font-medium">Viewer</p>
-                        <p className="text-xs text-muted-foreground">
-                          Can view but not edit
-                        </p>
+                    </SelectItem>
+                    <SelectItem value="viewer">
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        <div>
+                          <p className="font-medium">Viewer</p>
+                          <p className="text-xs text-muted-foreground">
+                            Can view but not edit
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-between gap-3">
+                <Button
+                  variant="outline"
+                  onClick={copyCollaborationLink}
+                  className="flex-1"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Copy Link
+                </Button>
+                <Button onClick={sendInvitation} className="flex-1">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Send Invite
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-between gap-3">
-              <Button
-                variant="outline"
-                onClick={copyCollaborationLink}
-                className="flex-1"
-              >
-                <Share2 className="h-4 w-4 mr-2" />
-                Copy Link
-              </Button>
-              <Button onClick={sendInvitation} className="flex-1">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Send Invite
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // Fallback: show start button if something went wrong
+  return (
+    <Button
+      onClick={() => startCollaboration.mutate()}
+      disabled={startCollaboration.isPending}
+      size="sm"
+      variant="outline"
+      className={className}
+    >
+      <Users className="h-4 w-4 mr-2" />
+      <span className="hidden sm:inline">
+        {startCollaboration.isPending ? "Starting..." : "Collaborate"}
+      </span>
+      <span className="sm:hidden">
+        {startCollaboration.isPending ? "..." : "Collab"}
+      </span>
+    </Button>
   );
 }
