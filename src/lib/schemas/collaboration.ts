@@ -62,6 +62,8 @@ export const mindMapActionSchema = z.object({
     "node_create",
     "node_delete",
     "cursor_move",
+    "user_join",
+    "user_leave",
   ]),
   nodeId: z.string().optional(),
   position: z
