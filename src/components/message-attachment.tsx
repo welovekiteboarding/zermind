@@ -34,6 +34,10 @@ export function MessageAttachment({
   const [refreshedUrls, setRefreshedUrls] = useState<Record<string, string>>(
     {}
   );
+  // Store pending promises to prevent duplicate requests
+  const [pendingRefreshes, setPendingRefreshes] = useState<
+    Record<string, Promise<string>>
+  >({});
 
   if (!attachments || attachments.length === 0) {
     return null;
@@ -46,26 +50,50 @@ export function MessageAttachment({
       return attachment.url;
     }
 
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.storage
-        .from("chat-attachments")
-        .createSignedUrl(attachment.filePath, 3600); // 1 hour expiry
-
-      if (error) {
-        console.error("Error refreshing signed URL:", error);
-        return attachment.url;
-      }
-
-      setRefreshedUrls((prev) => ({
-        ...prev,
-        [attachment.id]: data.signedUrl,
-      }));
-      return data.signedUrl;
-    } catch (error) {
-      console.error("Failed to refresh signed URL:", error);
-      return attachment.url;
+    // Check if there's already a pending request for this filePath
+    if (attachment.filePath in pendingRefreshes) {
+      console.log("Reusing pending refresh request for:", attachment.filePath);
+      return pendingRefreshes[attachment.filePath];
     }
+
+    // Create a new promise for this refresh request
+    const refreshPromise = (async () => {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase.storage
+          .from("chat-attachments")
+          .createSignedUrl(attachment.filePath!, 3600); // 1 hour expiry
+
+        if (error) {
+          console.error("Error refreshing signed URL:", error);
+          return attachment.url;
+        }
+
+        setRefreshedUrls((prev) => ({
+          ...prev,
+          [attachment.id]: data.signedUrl,
+        }));
+        return data.signedUrl;
+      } catch (error) {
+        console.error("Failed to refresh signed URL:", error);
+        return attachment.url;
+      } finally {
+        // Clean up the pending promise when done
+        setPendingRefreshes((prev) => {
+          const updated = { ...prev };
+          delete updated[attachment.filePath!];
+          return updated;
+        });
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    setPendingRefreshes((prev) => ({
+      ...prev,
+      [attachment.filePath!]: refreshPromise,
+    }));
+
+    return refreshPromise;
   };
 
   const handleImageError = async (attachmentId: string) => {
