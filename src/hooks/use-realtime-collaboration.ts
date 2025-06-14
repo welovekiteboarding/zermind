@@ -70,6 +70,7 @@ export function useRealtimeCollaboration({
     CollaborativeUser[]
   >([]);
   const [userColor, setUserColor] = useState<string>("#3B82F6");
+  const [shouldAnnounceJoin, setShouldAnnounceJoin] = useState(false);
 
   const supabase = createClient();
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
@@ -77,10 +78,11 @@ export function useRealtimeCollaboration({
   // Use refs for stable callback references
   const onActionRef = useRef(onAction);
   const onPresenceChangeRef = useRef(onPresenceChange);
-  
+
   // Use refs for stable values to avoid dependency issues
   const userColorRef = useRef(userColor);
   const isConnectedRef = useRef(isConnected);
+  const announceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -99,6 +101,45 @@ export function useRealtimeCollaboration({
   useEffect(() => {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
+
+  // Handle user join announcement after color assignment
+  useEffect(() => {
+    if (!shouldAnnounceJoin || !channel || !isConnected || !userColor) return;
+
+    // Clear any existing timeout
+    if (announceTimeoutRef.current) {
+      clearTimeout(announceTimeoutRef.current);
+    }
+
+    // Announce user join after a small delay
+    announceTimeoutRef.current = setTimeout(async () => {
+      const joinAction: MindMapAction = {
+        type: "user_join",
+        userId,
+        userName,
+        userColor,
+        timestamp: Date.now(),
+      };
+
+      try {
+        await channel.send({
+          type: "broadcast",
+          event: EVENT_USER_JOIN_TYPE,
+          payload: joinAction,
+        });
+        setShouldAnnounceJoin(false);
+      } catch (error) {
+        console.warn("Failed to announce user join:", error);
+      }
+    }, 100);
+
+    return () => {
+      if (announceTimeoutRef.current) {
+        clearTimeout(announceTimeoutRef.current);
+        announceTimeoutRef.current = null;
+      }
+    };
+  }, [shouldAnnounceJoin, channel, isConnected, userColor, userId, userName]);
 
   // Broadcast an action to other users
   const broadcastAction = useCallback(
@@ -221,42 +262,20 @@ export function useRealtimeCollaboration({
         setIsConnected(true);
         console.log("Realtime collaboration connected to:", roomName);
 
-        // Assign a color for this user (use current state, not ref)
-        setUserColor((currentColor) => {
-          // Get available colors based on current users
-          setCollaborativeUsers((currentUsers) => {
-            const availableColors = USER_COLORS.filter(
-              (color) => !currentUsers.some((user) => user.color === color)
-            );
-            const assignedColor =
-              availableColors[0] ||
-              USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
+        // Assign a color for this user synchronously
+        setCollaborativeUsers((currentUsers) => {
+          const availableColors = USER_COLORS.filter(
+            (color) => !currentUsers.some((user) => user.color === color)
+          );
+          const assignedColor =
+            availableColors[0] ||
+            USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)];
 
-            // Announce user join after a small delay
-            setTimeout(async () => {
-              const joinAction: MindMapAction = {
-                type: "user_join",
-                userId,
-                userName,
-                userColor: assignedColor,
-                timestamp: Date.now(),
-              };
+          // Set the user color and trigger announcement
+          setUserColor(assignedColor);
+          setShouldAnnounceJoin(true);
 
-              try {
-                await newChannel.send({
-                  type: "broadcast",
-                  event: EVENT_USER_JOIN_TYPE,
-                  payload: joinAction,
-                });
-              } catch (error) {
-                console.warn("Failed to announce user join:", error);
-              }
-            }, 100);
-
-            return currentUsers; // Don't change users here
-          });
-
-          return currentColor; // Return the assigned color
+          return currentUsers; // Don't change users here
         });
       } else if (status === "CHANNEL_ERROR") {
         setIsConnected(false);
@@ -277,6 +296,12 @@ export function useRealtimeCollaboration({
 
     // Cleanup on unmount
     return () => {
+      // Clear any pending announcement timeout
+      if (announceTimeoutRef.current) {
+        clearTimeout(announceTimeoutRef.current);
+        announceTimeoutRef.current = null;
+      }
+
       // Announce user leave before cleanup
       if (newChannel && isConnectedRef.current) {
         const leaveAction: MindMapAction = {
@@ -287,19 +312,46 @@ export function useRealtimeCollaboration({
           timestamp: Date.now(),
         };
 
-        newChannel.send({
-          type: "broadcast",
-          event: EVENT_USER_LEAVE_TYPE,
-          payload: leaveAction,
-        }).catch((error) => {
-          console.warn("Failed to announce user leave:", error);
-        });
+        // Use sendBeacon for reliable delivery during page unload
+        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+          try {
+            const beaconData = JSON.stringify({
+              chatId,
+              action: leaveAction,
+            });
+            navigator.sendBeacon("/api/collaboration/beacon", beaconData);
+          } catch (error) {
+            console.warn("Failed to send user leave beacon:", error);
+            // Fallback to channel send if beacon fails
+            newChannel
+              .send({
+                type: "broadcast",
+                event: EVENT_USER_LEAVE_TYPE,
+                payload: leaveAction,
+              })
+              .catch((error) => {
+                console.warn("Failed to announce user leave:", error);
+              });
+          }
+        } else {
+          // Fallback for environments without sendBeacon
+          newChannel
+            .send({
+              type: "broadcast",
+              event: EVENT_USER_LEAVE_TYPE,
+              payload: leaveAction,
+            })
+            .catch((error) => {
+              console.warn("Failed to announce user leave:", error);
+            });
+        }
       }
 
       supabase.removeChannel(newChannel);
       setChannel(null);
       setIsConnected(false);
       setCollaborativeUsers([]);
+      setShouldAnnounceJoin(false);
     };
   }, [chatId, userId, userName, supabase]); // Only include truly stable dependencies
 
