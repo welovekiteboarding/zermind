@@ -21,6 +21,8 @@ import { type Attachment } from "@/lib/schemas/chat";
 import { nanoid } from "nanoid";
 import { Paperclip, X, Image as ImageIcon, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 interface ChatAttachmentProps {
   model: string;
@@ -56,26 +58,56 @@ export function ChatAttachment({
     maxFiles: 5, // Allow up to 5 files per message
   });
 
-  const handleUploadSuccess = useCallback(() => {
+  // Generate signed URL for private file access
+  const generateSignedUrl = async (filePath: string): Promise<string> => {
     try {
-      const newAttachments: Attachment[] = upload.files.map((file) => ({
-        id: nanoid(),
-        name: file.name,
-        mimeType: file.type,
-        size: file.size,
-        url: `${
-          process.env.NEXT_PUBLIC_SUPABASE_URL
-        }/storage/v1/object/public/chat-attachments/uploads/${new Date().getFullYear()}/${
-          new Date().getMonth() + 1
-        }/${file.name}`,
-        type: file.type.startsWith("image/") ? "image" : "document",
-      }));
+      const supabase = createClient();
+      const { data, error } = await supabase.storage
+        .from("chat-attachments")
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        throw error;
+      }
+
+      return data.signedUrl;
+    } catch (error) {
+      console.error("Failed to generate signed URL:", error);
+      throw error;
+    }
+  };
+
+  const handleUploadSuccess = useCallback(async () => {
+    try {
+      const newAttachments: Attachment[] = await Promise.all(
+        upload.files.map(async (file) => {
+          const filePath = `uploads/${new Date().getFullYear()}/${
+            new Date().getMonth() + 1
+          }/${file.name}`;
+
+          // Generate signed URL for private access
+          const signedUrl = await generateSignedUrl(filePath);
+
+          return {
+            id: nanoid(),
+            name: file.name,
+            mimeType: file.type,
+            size: file.size,
+            url: signedUrl,
+            // Store the file path for future signed URL generation
+            filePath: filePath,
+            type: file.type.startsWith("image/") ? "image" : "document",
+          };
+        })
+      );
 
       onAttachmentsChange([...attachments, ...newAttachments]);
       setShowDropzone(false);
       upload.setFiles([]);
     } catch (error) {
       console.error("Error handling upload success:", error);
+      toast.error("Error adding attachments");
     }
   }, [attachments, onAttachmentsChange, upload]);
 

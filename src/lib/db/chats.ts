@@ -4,6 +4,7 @@ import {
   ChatListItemSchema,
   type ChatWithMessages,
   type ChatListItem,
+  type Attachment,
 } from "@/lib/schemas/chat";
 
 import { randomBytes } from "crypto";
@@ -40,6 +41,7 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
         select: {
           content: true,
           createdAt: true,
+          attachments: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -52,8 +54,26 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
     },
   });
 
+  // Transform the raw data to match our schema
+  const transformedChats = rawChats.map((chat) => ({
+    ...chat,
+    messages: chat.messages.map((message) => {
+      // Parse attachments JSON back to array
+      const attachments = Array.isArray(message.attachments)
+        ? message.attachments
+        : message.attachments
+        ? JSON.parse(message.attachments as string)
+        : [];
+
+      return {
+        ...message,
+        attachments: attachments || [],
+      };
+    }),
+  }));
+
   // Validate and transform the data using Zod
-  return rawChats.map((chat) => ChatListItemSchema.parse(chat));
+  return transformedChats.map((chat) => ChatListItemSchema.parse(chat));
 }
 
 // Get a single chat with all messages
@@ -77,8 +97,26 @@ export async function getChatWithMessages(
 
   if (!rawChat) return null;
 
+  // Transform the raw data to match our schema
+  const transformedChat = {
+    ...rawChat,
+    messages: rawChat.messages.map((message) => {
+      // Parse attachments JSON back to array
+      const attachments = Array.isArray(message.attachments)
+        ? message.attachments
+        : message.attachments
+        ? JSON.parse(message.attachments as string)
+        : [];
+
+      return {
+        ...message,
+        attachments: attachments || [],
+      };
+    }),
+  };
+
   // Validate and transform the data using Zod
-  return ChatWithMessagesSchema.parse(rawChat);
+  return ChatWithMessagesSchema.parse(transformedChat);
 }
 
 // Create a new chat
@@ -124,7 +162,8 @@ export async function addMessage(
   role: "user" | "assistant",
   content: string,
   model?: string,
-  parentId?: string
+  parentId?: string,
+  attachments?: Attachment[]
 ) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -138,7 +177,7 @@ export async function addMessage(
         },
       });
 
-      // Create the message
+      // Create the message with attachments
       return await tx.message.create({
         data: {
           chatId,
@@ -146,6 +185,10 @@ export async function addMessage(
           content,
           model,
           parentId,
+          attachments:
+            attachments && attachments.length > 0
+              ? JSON.stringify(attachments)
+              : "[]",
         },
       });
     });
@@ -162,7 +205,8 @@ export async function addBranchingMessage(
   role: "user" | "assistant",
   content: string,
   model?: string,
-  branchName?: string
+  branchName?: string,
+  attachments?: Attachment[]
 ) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -176,7 +220,7 @@ export async function addBranchingMessage(
         },
       });
 
-      // Create the branching message
+      // Create the branching message with attachments
       return await tx.message.create({
         data: {
           chatId,
@@ -185,6 +229,10 @@ export async function addBranchingMessage(
           content,
           model,
           branchName,
+          attachments:
+            attachments && attachments.length > 0
+              ? JSON.stringify(attachments)
+              : "[]",
         },
       });
     });
@@ -195,7 +243,10 @@ export async function addBranchingMessage(
 }
 
 // Get conversation context up to a specific node (for resuming)
-export async function getConversationContext(nodeId: string, userId: string): Promise<
+export async function getConversationContext(
+  nodeId: string,
+  userId: string
+): Promise<
   {
     id: string;
     role: string;
@@ -206,7 +257,7 @@ export async function getConversationContext(nodeId: string, userId: string): Pr
 > {
   // First get the specific message and verify ownership
   const targetMessage = await prisma.message.findFirst({
-    where: { 
+    where: {
       id: nodeId,
       chat: {
         userId: userId,
@@ -243,7 +294,7 @@ export async function getConversationContext(nodeId: string, userId: string): Pr
 
     if (currentMessage.parentId) {
       currentMessage = await prisma.message.findFirst({
-        where: { 
+        where: {
           id: currentMessage.parentId,
           chat: {
             userId: userId,

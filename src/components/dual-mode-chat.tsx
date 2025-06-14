@@ -20,6 +20,15 @@ interface Message {
   xPosition?: number;
   yPosition?: number;
   createdAt: string;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    mimeType: string;
+    size: number;
+    url: string;
+    filePath?: string;
+    type: "image" | "document";
+  }>;
 }
 
 interface DualModeChatProps {
@@ -185,7 +194,7 @@ export function DualModeChat({
             ...msg,
             role: msg.role as "user" | "assistant",
             createdAt: new Date(msg.createdAt),
-            attachments: [],
+            attachments: msg.attachments || [],
           }))}
           userId={userId}
           chatTitle={chatTitle}

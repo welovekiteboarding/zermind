@@ -6,7 +6,8 @@ export const AttachmentSchema = z.object({
   name: z.string(),
   mimeType: z.string(),
   size: z.number(),
-  url: z.string(), // Supabase storage URL
+  url: z.string(), // Supabase signed URL for private access
+  filePath: z.string().optional(), // Storage path for regenerating signed URLs
   type: z.enum(["image", "document"]),
 });
 
@@ -17,7 +18,7 @@ export const MessageSchema = z.object({
   content: z.string(),
   createdAt: z.coerce.date(),
   model: z.string().nullish(), // Handles both null and undefined
-  attachments: z.array(AttachmentSchema).optional().default([]),
+  attachments: z.array(AttachmentSchema).default([]),
   parentId: z.string().nullish(), // For conversation branching
   branchName: z.string().nullish(), // User-defined branch labels
 });
@@ -57,6 +58,7 @@ export const ChatListItemSchema = ChatSchema.extend({
       z.object({
         content: z.string(),
         createdAt: z.coerce.date(),
+        attachments: z.array(AttachmentSchema).optional().default([]),
       })
     )
     .max(1)

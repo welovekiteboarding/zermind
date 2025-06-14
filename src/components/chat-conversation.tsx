@@ -406,7 +406,9 @@ export function ChatConversation({
                         <div className="whitespace-pre-wrap break-words text-xs sm:text-sm">
                           {message.content}
                         </div>
-                        <MessageAttachment attachments={message.attachments} />
+                        <MessageAttachment
+                          attachments={message.attachments || []}
+                        />
                         <div className="flex items-center justify-between mt-1.5 sm:mt-2">
                           <Badge
                             variant="outline"
