@@ -124,222 +124,83 @@ function useMultiBranchingChats({
   setModelStatuses: React.Dispatch<React.SetStateAction<ModelBranchStatus[]>>;
   onBranchCreated?: () => void;
 }) {
+  // Helper function to create chat configuration for a specific model index
+  const createChatConfig = useCallback(
+    (modelIndex: number) => {
+      const model = selectedModels[modelIndex] || "";
+
+      const handleFinish = () => {
+        if (model) {
+          setModelStatuses((prev) => {
+            const updatedStatuses = prev.map((status) =>
+              status.model === model
+                ? { ...status, status: "success" as const }
+                : status
+            );
+
+            // Check if all models are done using the updated statuses
+            const allDone = updatedStatuses.every(
+              (s) => s.status === "success" || s.status === "error"
+            );
+            if (allDone) {
+              setTimeout(() => onBranchCreated?.(), 0);
+            }
+
+            return updatedStatuses;
+          });
+        }
+      };
+
+      const handleError = (error: Error) => {
+        if (model) {
+          setModelStatuses((prev) => {
+            const updatedStatuses = prev.map((status) =>
+              status.model === model
+                ? { ...status, status: "error" as const, error: error.message }
+                : status
+            );
+
+            // Check if all models are done using the updated statuses
+            const allDone = updatedStatuses.every(
+              (s) => s.status === "success" || s.status === "error"
+            );
+            if (allDone) {
+              setTimeout(() => onBranchCreated?.(), 0);
+            }
+
+            return updatedStatuses;
+          });
+        }
+      };
+
+      return {
+        chatId,
+        parentNodeId,
+        initialContext,
+        model,
+        branchName:
+          branchName ||
+          `${getProviderDisplayName(getProviderFromModel(model))} Response`,
+        onFinish: handleFinish,
+        onError: handleError,
+      };
+    },
+    [
+      chatId,
+      parentNodeId,
+      initialContext,
+      selectedModels,
+      branchName,
+      setModelStatuses,
+      onBranchCreated,
+    ]
+  );
+
   // Create fixed number of hook instances (max 4 models)
-  const chat1 = useBranchingChat({
-    chatId,
-    parentNodeId,
-    initialContext,
-    model: selectedModels[0] || "",
-    branchName:
-      branchName ||
-      `${getProviderDisplayName(
-        getProviderFromModel(selectedModels[0] || "")
-      )} Response`,
-    onFinish: () => {
-      if (selectedModels[0]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[0]
-              ? { ...status, status: "success" as const }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-    onError: (error) => {
-      if (selectedModels[0]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[0]
-              ? { ...status, status: "error" as const, error: error.message }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-  });
-
-  const chat2 = useBranchingChat({
-    chatId,
-    parentNodeId,
-    initialContext,
-    model: selectedModels[1] || "",
-    branchName:
-      branchName ||
-      `${getProviderDisplayName(
-        getProviderFromModel(selectedModels[1] || "")
-      )} Response`,
-    onFinish: () => {
-      if (selectedModels[1]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[1]
-              ? { ...status, status: "success" as const }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-    onError: (error) => {
-      if (selectedModels[1]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[1]
-              ? { ...status, status: "error" as const, error: error.message }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-  });
-
-  const chat3 = useBranchingChat({
-    chatId,
-    parentNodeId,
-    initialContext,
-    model: selectedModels[2] || "",
-    branchName:
-      branchName ||
-      `${getProviderDisplayName(
-        getProviderFromModel(selectedModels[2] || "")
-      )} Response`,
-    onFinish: () => {
-      if (selectedModels[2]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[2]
-              ? { ...status, status: "success" as const }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-    onError: (error) => {
-      if (selectedModels[2]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[2]
-              ? { ...status, status: "error" as const, error: error.message }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-  });
-
-  const chat4 = useBranchingChat({
-    chatId,
-    parentNodeId,
-    initialContext,
-    model: selectedModels[3] || "",
-    branchName:
-      branchName ||
-      `${getProviderDisplayName(
-        getProviderFromModel(selectedModels[3] || "")
-      )} Response`,
-    onFinish: () => {
-      if (selectedModels[3]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[3]
-              ? { ...status, status: "success" as const }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-    onError: (error) => {
-      if (selectedModels[3]) {
-        setModelStatuses((prev) => {
-          const updatedStatuses = prev.map((status) =>
-            status.model === selectedModels[3]
-              ? { ...status, status: "error" as const, error: error.message }
-              : status
-          );
-
-          // Check if all models are done using the updated statuses
-          const allDone = updatedStatuses.every(
-            (s) => s.status === "success" || s.status === "error"
-          );
-          if (allDone) {
-            setTimeout(() => onBranchCreated?.(), 0);
-          }
-
-          return updatedStatuses;
-        });
-      }
-    },
-  });
+  const chat1 = useBranchingChat(createChatConfig(0));
+  const chat2 = useBranchingChat(createChatConfig(1));
+  const chat3 = useBranchingChat(createChatConfig(2));
+  const chat4 = useBranchingChat(createChatConfig(3));
 
   // Return only the active chats based on selected models
   const activeChats = useMemo(() => {
@@ -361,7 +222,11 @@ function useMultiBranchingChats({
     async (message: string) => {
       const promises = selectedModels
         .map(async (model, index) => {
-          if (index < activeChats.length) {
+          if (
+            index < activeChats.length &&
+            activeChats[index] &&
+            typeof activeChats[index].sendMessage === "function"
+          ) {
             setModelStatuses((prev) =>
               prev.map((status) =>
                 status.model === model
@@ -437,7 +302,7 @@ export function CreateMultiModelBranch({
     setModelStatuses(
       data.selectedModels.map((model) => ({
         model,
-        status: "pending",
+        status: "loading",
       }))
     );
 
@@ -667,10 +532,13 @@ export function CreateMultiModelBranch({
                         disabled={isAnyLoading}
                         className="flex-1"
                         {...field}
-                        onKeyDown={(e) => {
+                        onKeyDown={async (e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            form.handleSubmit(handleMultiModelSubmit)();
+                            const isValid = await form.trigger();
+                            if (isValid) {
+                              form.handleSubmit(handleMultiModelSubmit)();
+                            }
                           }
                         }}
                       />
@@ -726,15 +594,25 @@ export function CreateMultiModelBranch({
           <div className="space-y-2">
             {activeChats
               .filter((chat) => chat.error)
-              .map((chat, index) => (
-                <div
-                  key={index}
-                  className="flex items-start space-x-2 text-destructive text-sm"
-                >
-                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                  <span>{chat.error?.message}</span>
-                </div>
-              ))}
+              .map((chat, index) => {
+                const modelId = form.watch("selectedModels")[index];
+                const modelName = modelId
+                  ? getModelDisplayName(modelId)
+                  : `Model ${index + 1}`;
+
+                return (
+                  <div
+                    key={index}
+                    className="flex items-start space-x-2 text-destructive text-sm"
+                  >
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">{modelName}:</span>
+                      <span>{chat.error?.message}</span>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         )}
       </CardContent>
