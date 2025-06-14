@@ -83,25 +83,27 @@ export async function leaveCollaborationSession(
   sessionId: string,
   userId: string
 ): Promise<void> {
-  // Remove participant
-  await prisma.sessionParticipant.deleteMany({
-    where: {
-      sessionId,
-      userId,
-    },
-  });
-
-  // Check if session has any participants left
-  const remainingParticipants = await prisma.sessionParticipant.count({
-    where: { sessionId },
-  });
-
-  // If no participants left, clean up the session
-  if (remainingParticipants === 0) {
-    await prisma.collaborationSession.delete({
-      where: { id: sessionId },
+  await prisma.$transaction(async (tx) => {
+    // Remove participant
+    await tx.sessionParticipant.deleteMany({
+      where: {
+        sessionId,
+        userId,
+      },
     });
-  }
+
+    // Check if session has any participants left
+    const remainingParticipants = await tx.sessionParticipant.count({
+      where: { sessionId },
+    });
+
+    // If no participants left, clean up the session
+    if (remainingParticipants === 0) {
+      await tx.collaborationSession.delete({
+        where: { id: sessionId },
+      });
+    }
+  });
 }
 
 // Update session activity (heartbeat)
@@ -207,83 +209,70 @@ export async function joinCollaborationSession(
   error?: string;
 }> {
   try {
-    // Check if there's an active collaboration session
-    let session = await prisma.collaborationSession.findFirst({
-      where: {
-        chatId,
-        lastActivity: {
-          gte: new Date(Date.now() - 5 * 60 * 1000), // Active within 5 minutes
-        },
-      },
-      include: {
-        participants: true,
-      },
-    });
-
-    if (!session) {
-      // If no active session and user is not the owner, they can't join
-      if (!isOwner) {
-        return {
-          success: false,
-          error: "No active collaboration session",
-        };
-      }
-
-      // If user is owner, create a new session
-      session = await prisma.collaborationSession.create({
-        data: {
+    const session = await prisma.$transaction(async (tx) => {
+      // Check if there's an active collaboration session
+      let session = await tx.collaborationSession.findFirst({
+        where: {
           chatId,
-          participants: {
-            create: {
-              userId,
-              role: "owner",
-            },
+          lastActivity: {
+            gte: new Date(Date.now() - 5 * 60 * 1000), // Active within 5 minutes
           },
         },
-        include: { participants: true },
+        include: {
+          participants: true,
+        },
       });
-    } else {
-      // Check if user is already a participant
-      const existingParticipant = session.participants.find(
-        (p) => p.userId === userId
-      );
 
-      if (!existingParticipant) {
-        // Add user as collaborator
-        await prisma.sessionParticipant.create({
+      if (!session) {
+        // If no active session and user is not the owner, they can't join
+        if (!isOwner) {
+          throw new Error("No active collaboration session");
+        }
+
+        // If user is owner, create a new session
+        session = await tx.collaborationSession.create({
           data: {
+            chatId,
+            participants: {
+              create: {
+                userId,
+                role: "owner",
+              },
+            },
+          },
+          include: { participants: true },
+        });
+      } else {
+        // Use upsert to safely handle concurrent participant creation
+        await tx.sessionParticipant.upsert({
+          where: {
+            sessionId_userId: {
+              sessionId: session.id,
+              userId,
+            },
+          },
+          update: {
+            lastActivity: new Date(),
+            // Update role if user is owner (in case they weren't before)
+            role: isOwner ? "owner" : undefined,
+          },
+          create: {
             sessionId: session.id,
             userId,
             role: isOwner ? "owner" : "collaborator",
           },
         });
 
-        // Refresh session data to include new participant
-        session = await prisma.collaborationSession.findFirst({
+        // Update session last activity
+        session = await tx.collaborationSession.update({
           where: { id: session.id },
-          include: { participants: true },
-        });
-
-        if (!session) {
-          return {
-            success: false,
-            error: "Failed to update collaboration session",
-          };
-        }
-      } else {
-        // Update participant activity
-        await prisma.sessionParticipant.update({
-          where: { id: existingParticipant.id },
           data: { lastActivity: new Date() },
+          include: { participants: true },
         });
       }
 
-      // Update session last activity
-      await prisma.collaborationSession.update({
-        where: { id: session.id },
-        data: { lastActivity: new Date() },
-      });
-    }
+      return session;
+    });
 
     return {
       success: true,
@@ -291,6 +280,18 @@ export async function joinCollaborationSession(
     };
   } catch (error) {
     console.error("Join collaboration session error:", error);
+
+    // Handle specific error cases
+    if (
+      error instanceof Error &&
+      error.message === "No active collaboration session"
+    ) {
+      return {
+        success: false,
+        error: "No active collaboration session",
+      };
+    }
+
     return {
       success: false,
       error: "Failed to join collaboration session",
