@@ -35,6 +35,8 @@ import {
   useAccountStats,
 } from "@/hooks/use-account";
 
+const DELETE_CONFIRMATION_TEXT = "DELETE MY ACCOUNT";
+
 const deleteAccountSchema = z.object({
   confirmation: z.string().min(1, "Please enter the confirmation text"),
 });
@@ -76,17 +78,17 @@ export function DangerZone({ className }: DangerZoneProps) {
 
   const handleDeleteAccount = async (data: DeleteFormData) => {
     // Validate that the confirmation text is correct
-    if (data.confirmation.trim() !== "DELETE MY ACCOUNT") {
+    if (data.confirmation.trim() !== DELETE_CONFIRMATION_TEXT) {
       deleteForm.setError("confirmation", {
         type: "manual",
-        message: "Please type 'DELETE MY ACCOUNT' exactly to confirm",
+        message: `Please type '${DELETE_CONFIRMATION_TEXT}' exactly to confirm`,
       });
       return;
     }
 
     try {
       const result = await deleteAccountMutation.mutateAsync({
-        confirmation: "DELETE MY ACCOUNT",
+        confirmation: DELETE_CONFIRMATION_TEXT,
       });
       toast.success(result.message);
       setIsDeleteDialogOpen(false);
@@ -288,13 +290,13 @@ export function DangerZone({ className }: DangerZoneProps) {
                       <label className="text-sm font-medium block mb-2">
                         Type{" "}
                         <Badge variant="destructive" className="mx-1 text-xs">
-                          DELETE MY ACCOUNT
+                          {DELETE_CONFIRMATION_TEXT}
                         </Badge>{" "}
                         to confirm:
                       </label>
                       <Input
                         {...deleteForm.register("confirmation")}
-                        placeholder="DELETE MY ACCOUNT"
+                        placeholder={DELETE_CONFIRMATION_TEXT}
                         className="text-sm"
                       />
                       {deleteForm.formState.errors.confirmation && (
@@ -324,7 +326,7 @@ export function DangerZone({ className }: DangerZoneProps) {
                           deleteAccountMutation.isPending ||
                           !deleteForm.watch("confirmation") ||
                           deleteForm.watch("confirmation") !==
-                            "DELETE MY ACCOUNT"
+                            DELETE_CONFIRMATION_TEXT
                         }
                         className="w-full sm:w-auto"
                       >
