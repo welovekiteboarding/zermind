@@ -71,10 +71,20 @@ export function isAttachmentUrlExpired(attachment: Attachment): boolean {
 export function generateUniqueFileName(originalName: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 15);
-  const extension = originalName.split(".").pop();
-  const nameWithoutExtension = originalName.replace(/\.[^/.]+$/, "");
 
-  return `${nameWithoutExtension}_${timestamp}_${random}.${extension}`;
+  // Check if file has an extension
+  const lastDotIndex = originalName.lastIndexOf(".");
+  const hasExtension =
+    lastDotIndex > 0 && lastDotIndex < originalName.length - 1;
+
+  if (hasExtension) {
+    const extension = originalName.substring(lastDotIndex + 1);
+    const nameWithoutExtension = originalName.substring(0, lastDotIndex);
+    return `${nameWithoutExtension}_${timestamp}_${random}.${extension}`;
+  } else {
+    // No extension, return unique name without adding extension
+    return `${originalName}_${timestamp}_${random}`;
+  }
 }
 
 /**
