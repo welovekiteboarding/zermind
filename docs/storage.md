@@ -206,30 +206,197 @@ If you're migrating from a public bucket:
 3. **Update existing attachment URLs** to use signed URLs:
 
 ```typescript
-// Migration script example
+// Robust migration script with batch processing and error handling
 const migrateAttachments = async () => {
-  const { data: messages } = await supabase
-    .from("messages")
-    .select("*")
-    .not("attachments", "is", null);
+  const BATCH_SIZE = 100; // Process messages in batches
+  const UPDATE_BATCH_SIZE = 50; // Update messages in smaller batches
 
-  for (const message of messages) {
-    const updatedAttachments = await Promise.all(
-      message.attachments.map(async (attachment) => {
-        if (!attachment.filePath) {
-          // Extract file path from public URL
-          const url = new URL(attachment.url);
-          const filePath = url.pathname.split("/public/chat-attachments/")[1];
-          return { ...attachment, filePath };
+  // Regex pattern to extract file path from various URL formats
+  const URL_PATTERNS = [
+    /\/public\/chat-attachments\/(.+)$/, // Standard public URL
+    /\/storage\/v1\/object\/public\/chat-attachments\/(.+)$/, // Full storage URL
+    /\/chat-attachments\/(.+)$/, // Simple bucket path
+  ];
+
+  let totalProcessed = 0;
+  let totalErrors = 0;
+  let offset = 0;
+
+  console.log("🚀 Starting attachment migration...");
+
+  try {
+    while (true) {
+      // Fetch messages in batches
+      const { data: messages, error: fetchError } = await supabase
+        .from("messages")
+        .select("id, attachments")
+        .not("attachments", "is", null)
+        .range(offset, offset + BATCH_SIZE - 1)
+        .order("created_at", { ascending: true });
+
+      if (fetchError) {
+        console.error("❌ Error fetching messages:", fetchError);
+        throw fetchError;
+      }
+
+      if (!messages || messages.length === 0) {
+        console.log("✅ No more messages to process");
+        break;
+      }
+
+      console.log(
+        `📦 Processing batch: ${offset + 1}-${offset + messages.length}`
+      );
+
+      const processedMessages: Array<{ id: string; attachments: any[] }> = [];
+
+      // Process each message with error handling
+      for (const message of messages) {
+        try {
+          const updatedAttachments = message.attachments.map(
+            (attachment: any) => {
+              if (!attachment.filePath && attachment.url) {
+                const filePath = extractFilePathFromUrl(attachment.url);
+                if (filePath) {
+                  return { ...attachment, filePath };
+                } else {
+                  console.warn(
+                    `⚠️  Failed to extract file path from URL: ${attachment.url}`
+                  );
+                  return attachment; // Keep original if extraction fails
+                }
+              }
+              return attachment;
+            }
+          );
+
+          // Only include messages that had successful updates
+          if (
+            JSON.stringify(updatedAttachments) !==
+            JSON.stringify(message.attachments)
+          ) {
+            processedMessages.push({
+              id: message.id,
+              attachments: updatedAttachments,
+            });
+          }
+        } catch (error) {
+          console.error(`❌ Error processing message ${message.id}:`, error);
+          totalErrors++;
+          continue; // Skip this message and continue with others
         }
-        return attachment;
-      })
-    );
+      }
 
-    await supabase
-      .from("messages")
-      .update({ attachments: updatedAttachments })
-      .eq("id", message.id);
+      // Update messages in smaller batches to avoid timeouts
+      if (processedMessages.length > 0) {
+        await updateMessagesInBatches(processedMessages, UPDATE_BATCH_SIZE);
+      }
+
+      totalProcessed += messages.length;
+      offset += BATCH_SIZE;
+
+      // Progress update
+      console.log(
+        `📊 Progress: ${totalProcessed} messages processed, ${totalErrors} errors`
+      );
+
+      // Small delay to avoid overwhelming the database
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    console.log(
+      `🎉 Migration completed! Processed: ${totalProcessed}, Errors: ${totalErrors}`
+    );
+  } catch (error) {
+    console.error("💥 Migration failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Extract file path from URL using multiple regex patterns
+ */
+const extractFilePathFromUrl = (url: string): string | null => {
+  if (!url || typeof url !== "string") {
+    return null;
+  }
+
+  try {
+    // Try each pattern until one matches
+    for (const pattern of URL_PATTERNS) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return decodeURIComponent(match[1]); // Decode URL-encoded characters
+      }
+    }
+
+    // Fallback: try to parse as URL and extract pathname
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/chat-attachments/");
+      if (pathParts.length > 1 && pathParts[1]) {
+        return decodeURIComponent(pathParts[1]);
+      }
+    } catch {
+      // URL parsing failed, continue to return null
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`Error extracting file path from URL ${url}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Update messages in batches with error handling
+ */
+const updateMessagesInBatches = async (
+  messages: Array<{ id: string; attachments: any[] }>,
+  batchSize: number
+) => {
+  for (let i = 0; i < messages.length; i += batchSize) {
+    const batch = messages.slice(i, i + batchSize);
+
+    try {
+      // Process batch updates in parallel but with individual error handling
+      const updatePromises = batch.map(async (message) => {
+        try {
+          const { error } = await supabase
+            .from("messages")
+            .update({ attachments: message.attachments })
+            .eq("id", message.id);
+
+          if (error) {
+            console.error(`❌ Error updating message ${message.id}:`, error);
+            return { success: false, id: message.id, error };
+          }
+
+          return { success: true, id: message.id };
+        } catch (err) {
+          console.error(`❌ Exception updating message ${message.id}:`, err);
+          return { success: false, id: message.id, error: err };
+        }
+      });
+
+      const results = await Promise.allSettled(updatePromises);
+      const successful = results.filter(
+        (r) => r.status === "fulfilled" && r.value.success
+      ).length;
+      const failed = results.length - successful;
+
+      if (failed > 0) {
+        console.warn(
+          `⚠️  Batch update completed with ${failed} failures out of ${results.length}`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `❌ Batch update failed for batch starting at index ${i}:`,
+        error
+      );
+      // Continue with next batch instead of failing completely
+    }
   }
 };
 ```
