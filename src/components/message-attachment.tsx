@@ -15,7 +15,7 @@ import {
 import { formatBytes } from "@/components/dropzone";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface MessageAttachmentProps {
@@ -39,6 +39,9 @@ export function MessageAttachment({
     Record<string, Promise<string>>
   >({});
 
+  // Create Supabase client once and reuse it
+  const supabaseRef = useRef(createClient());
+
   if (!attachments || attachments.length === 0) {
     return null;
   }
@@ -59,8 +62,7 @@ export function MessageAttachment({
     // Create a new promise for this refresh request
     const refreshPromise = (async () => {
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase.storage
+        const { data, error } = await supabaseRef.current.storage
           .from("chat-attachments")
           .createSignedUrl(attachment.filePath!, 3600); // 1 hour expiry
 
