@@ -113,6 +113,8 @@ export const collaborationSettingsSchema = z.object({
   conflictResolution: z
     .enum(["last-writer-wins", "manual", "auto-merge"])
     .default("last-writer-wins"),
+  defaultRole: z.enum(["collaborator", "viewer"]).default("collaborator"),
+  maxParticipants: z.number().optional(),
 });
 
 // Collaboration session response schema
