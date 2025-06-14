@@ -222,7 +222,7 @@ export function AppSidebar() {
                           asChild
                           className="h-auto min-h-[2.5rem] sm:min-h-[3rem] py-2"
                         >
-                          <a
+                          <Link
                             href={`/protected/chat/${chat.id}`}
                             className="flex-1 m-2"
                           >
@@ -235,7 +235,7 @@ export function AppSidebar() {
                                 {formatDate(chat.updatedAt)}
                               </div>
                             </div>
-                          </a>
+                          </Link>
                         </SidebarMenuButton>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
