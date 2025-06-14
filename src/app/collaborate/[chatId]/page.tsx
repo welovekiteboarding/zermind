@@ -67,36 +67,46 @@ export default async function CollaborationPage({
       } 
       // If collaboration is active and user has collaboration link, auto-join as collaborator
       else if (collaborate === "true" && chat.is_collaborative) {
-        // Auto-join the collaboration session
-        await prisma.sessionParticipant.create({
+        try {
+          // Auto-join the collaboration session
+          await prisma.sessionParticipant.create({
+            data: {
+              sessionId: collaborationSession.id,
+              userId: userData.user.id,
+              role: "collaborator",
+            },
+          });
+          
+          userRole = "collaborator";
+          hasAccess = true;
+        } catch (error) {
+          console.error("Failed to join collaboration session:", error);
+          redirect("/protected?error=collaboration-join-failed");
+        }
+      }
+    }
+    // If no active session but chat is collaborative and user has link
+    else if (collaborate === "true" && chat.is_collaborative) {
+      try {
+        // Start a new collaboration session and join
+        await prisma.collaborationSession.create({
           data: {
-            sessionId: collaborationSession.id,
-            userId: userData.user.id,
-            role: "collaborator",
+            chatId,
+            participants: {
+              create: {
+                userId: userData.user.id,
+                role: "collaborator",
+              },
+            },
           },
         });
         
         userRole = "collaborator";
         hasAccess = true;
+      } catch (error) {
+        console.error("Failed to create collaboration session:", error);
+        redirect("/protected?error=collaboration-create-failed");
       }
-    }
-    // If no active session but chat is collaborative and user has link
-    else if (collaborate === "true" && chat.is_collaborative) {
-      // Start a new collaboration session and join
-      await prisma.collaborationSession.create({
-        data: {
-          chatId,
-          participants: {
-            create: {
-              userId: userData.user.id,
-              role: "collaborator",
-            },
-          },
-        },
-      });
-      
-      userRole = "collaborator";
-      hasAccess = true;
     }
 
     // If user doesn't have access, redirect with error
