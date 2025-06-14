@@ -58,7 +58,7 @@ model Message {
   role          String // 'user' or 'assistant'
   content       String // The message content
   model         String? // Optional: which LLM model was used for assistant messages
-  attachments   Json?    @default("[]") // Store attachments as JSON array
+  attachments   Json     @default("[]") // Store attachments as JSON array
   xPosition     Float    @default(0) @map("x_position") // Mind map coordinates
   yPosition     Float    @default(0) @map("y_position") // Mind map coordinates
   nodeType      NodeType @default(conversation) @map("node_type") // Type of node
