@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,16 +32,46 @@ import { useConversationContext } from "@/hooks/use-conversation-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getProviderFromModel, getProviderDisplayName, getModelDisplayName } from "@/lib/utils/model-utils";
+import {
+  getProviderFromModel,
+  getProviderDisplayName,
+  getModelDisplayName,
+} from "@/lib/utils/model-utils";
+import { type Message } from "@/lib/schemas/chat";
 
 // Available models for multi-model comparison
 const COMPARISON_MODELS = [
   { id: "openai/gpt-4o", name: "GPT-4o", provider: "OpenAI", tier: "premium" },
-  { id: "openai/gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI", tier: "standard" },
-  { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", tier: "premium" },
-  { id: "anthropic/claude-3-haiku", name: "Claude 3 Haiku", provider: "Anthropic", tier: "standard" },
-  { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B", provider: "Meta", tier: "premium" },
-  { id: "meta-llama/llama-3.1-70b-instruct", name: "Llama 3.1 70B", provider: "Meta", tier: "standard" },
+  {
+    id: "openai/gpt-4o-mini",
+    name: "GPT-4o Mini",
+    provider: "OpenAI",
+    tier: "standard",
+  },
+  {
+    id: "anthropic/claude-3.5-sonnet",
+    name: "Claude 3.5 Sonnet",
+    provider: "Anthropic",
+    tier: "premium",
+  },
+  {
+    id: "anthropic/claude-3-haiku",
+    name: "Claude 3 Haiku",
+    provider: "Anthropic",
+    tier: "standard",
+  },
+  {
+    id: "meta-llama/llama-3.1-405b-instruct",
+    name: "Llama 3.1 405B",
+    provider: "Meta",
+    tier: "premium",
+  },
+  {
+    id: "meta-llama/llama-3.1-70b-instruct",
+    name: "Llama 3.1 70B",
+    provider: "Meta",
+    tier: "standard",
+  },
 ];
 
 const multiModelFormSchema = z.object({
@@ -76,6 +106,249 @@ interface ModelBranchStatus {
   error?: string;
 }
 
+// Custom hook to manage multiple branching chats
+function useMultiBranchingChats({
+  chatId,
+  parentNodeId,
+  initialContext,
+  selectedModels,
+  branchName,
+  modelStatuses,
+  setModelStatuses,
+  onBranchCreated,
+}: {
+  chatId: string;
+  parentNodeId: string;
+  initialContext: Message[];
+  selectedModels: string[];
+  branchName: string;
+  modelStatuses: ModelBranchStatus[];
+  setModelStatuses: React.Dispatch<React.SetStateAction<ModelBranchStatus[]>>;
+  onBranchCreated?: () => void;
+}) {
+  // Create fixed number of hook instances (max 4 models)
+  const chat1 = useBranchingChat({
+    chatId,
+    parentNodeId,
+    initialContext,
+    model: selectedModels[0] || "",
+    branchName:
+      branchName ||
+      `${getProviderDisplayName(
+        getProviderFromModel(selectedModels[0] || "")
+      )} Response`,
+    onFinish: () => {
+      if (selectedModels[0]) {
+        setModelStatuses((prev) => {
+          const updatedStatuses = prev.map((status) =>
+            status.model === selectedModels[0]
+              ? { ...status, status: "success" as const }
+              : status
+          );
+
+          // Check if all models are done using the updated statuses
+          const allDone = updatedStatuses.every(
+            (s) => s.status === "success" || s.status === "error"
+          );
+          if (allDone) {
+            setTimeout(() => onBranchCreated?.(), 0);
+          }
+
+          return updatedStatuses;
+        });
+      }
+    },
+    onError: (error) => {
+      if (selectedModels[0]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[0]
+              ? { ...status, status: "error", error: error.message }
+              : status
+          )
+        );
+      }
+    },
+  });
+
+  const chat2 = useBranchingChat({
+    chatId,
+    parentNodeId,
+    initialContext,
+    model: selectedModels[1] || "",
+    branchName:
+      branchName ||
+      `${getProviderDisplayName(
+        getProviderFromModel(selectedModels[1] || "")
+      )} Response`,
+    onFinish: () => {
+      if (selectedModels[1]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[1]
+              ? { ...status, status: "success" }
+              : status
+          )
+        );
+
+        // Check if all models are done
+        const allDone = modelStatuses.every(
+          (s) => s.status === "success" || s.status === "error"
+        );
+        if (allDone) {
+          onBranchCreated?.();
+        }
+      }
+    },
+    onError: (error) => {
+      if (selectedModels[1]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[1]
+              ? { ...status, status: "error", error: error.message }
+              : status
+          )
+        );
+      }
+    },
+  });
+
+  const chat3 = useBranchingChat({
+    chatId,
+    parentNodeId,
+    initialContext,
+    model: selectedModels[2] || "",
+    branchName:
+      branchName ||
+      `${getProviderDisplayName(
+        getProviderFromModel(selectedModels[2] || "")
+      )} Response`,
+    onFinish: () => {
+      if (selectedModels[2]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[2]
+              ? { ...status, status: "success" }
+              : status
+          )
+        );
+
+        // Check if all models are done
+        const allDone = modelStatuses.every(
+          (s) => s.status === "success" || s.status === "error"
+        );
+        if (allDone) {
+          onBranchCreated?.();
+        }
+      }
+    },
+    onError: (error) => {
+      if (selectedModels[2]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[2]
+              ? { ...status, status: "error", error: error.message }
+              : status
+          )
+        );
+      }
+    },
+  });
+
+  const chat4 = useBranchingChat({
+    chatId,
+    parentNodeId,
+    initialContext,
+    model: selectedModels[3] || "",
+    branchName:
+      branchName ||
+      `${getProviderDisplayName(
+        getProviderFromModel(selectedModels[3] || "")
+      )} Response`,
+    onFinish: () => {
+      if (selectedModels[3]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[3]
+              ? { ...status, status: "success" }
+              : status
+          )
+        );
+
+        // Check if all models are done
+        const allDone = modelStatuses.every(
+          (s) => s.status === "success" || s.status === "error"
+        );
+        if (allDone) {
+          onBranchCreated?.();
+        }
+      }
+    },
+    onError: (error) => {
+      if (selectedModels[3]) {
+        setModelStatuses((prev) =>
+          prev.map((status) =>
+            status.model === selectedModels[3]
+              ? { ...status, status: "error", error: error.message }
+              : status
+          )
+        );
+      }
+    },
+  });
+
+  // Return only the active chats based on selected models
+  const activeChats = useMemo(() => {
+    const chats = [chat1, chat2, chat3, chat4];
+    return chats.slice(0, selectedModels.length);
+  }, [chat1, chat2, chat3, chat4, selectedModels.length]);
+
+  const isAnyLoading = useMemo(
+    () => activeChats.some((chat) => chat.isLoading),
+    [activeChats]
+  );
+
+  const hasAnyError = useMemo(
+    () => activeChats.some((chat) => chat.error),
+    [activeChats]
+  );
+
+  const sendMessageToAll = useCallback(
+    async (message: string) => {
+      const promises = selectedModels
+        .map(async (model, index) => {
+          if (index < activeChats.length) {
+            setModelStatuses((prev) =>
+              prev.map((status) =>
+                status.model === model
+                  ? { ...status, status: "loading" }
+                  : status
+              )
+            );
+
+            return activeChats[index].sendMessage(message);
+          }
+        })
+        .filter(Boolean);
+
+      return Promise.allSettled(promises);
+    },
+    [selectedModels, activeChats, setModelStatuses]
+  );
+
+  const stopAll = useCallback(() => {
+    activeChats.forEach((chat) => chat.stop());
+  }, [activeChats]);
+
+  return {
+    activeChats,
+    isAnyLoading,
+    hasAnyError,
+    sendMessageToAll,
+    stopAll,
+  };
+}
+
 export function CreateMultiModelBranch({
   chatId,
   parentNodeId,
@@ -101,53 +374,25 @@ export function CreateMultiModelBranch({
     error: contextError,
   } = useConversationContext(chatId, parentNodeId);
 
-  // Track multiple branching chat instances
-  const branchingChats = form.watch("selectedModels").map((model) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useBranchingChat({
+  // Use the custom hook for managing multiple branching chats
+  const { isAnyLoading, hasAnyError, sendMessageToAll, stopAll, activeChats } =
+    useMultiBranchingChats({
       chatId,
       parentNodeId,
       initialContext: context,
-      model,
-      branchName: form.watch("branchName")?.trim() || `${getProviderDisplayName(getProviderFromModel(model))} Response`,
-      onFinish: () => {
-        setModelStatuses(prev => 
-          prev.map(status => 
-            status.model === model 
-              ? { ...status, status: "success" }
-              : status
-          )
-        );
-        
-        // Check if all models are done
-        const allDone = modelStatuses.every(s => 
-          s.status === "success" || s.status === "error"
-        );
-        if (allDone) {
-          onBranchCreated?.();
-        }
-      },
-      onError: (error) => {
-        setModelStatuses(prev => 
-          prev.map(status => 
-            status.model === model 
-              ? { ...status, status: "error", error: error.message }
-              : status
-          )
-        );
-      },
+      selectedModels: form.watch("selectedModels"),
+      branchName: form.watch("branchName")?.trim() || "",
+      modelStatuses,
+      setModelStatuses,
+      onBranchCreated,
     });
-  });
-
-  const isAnyLoading = branchingChats.some(chat => chat.isLoading);
-  const hasAnyError = branchingChats.some(chat => chat.error);
 
   const handleMultiModelSubmit = async (data: MultiModelFormData) => {
     if (!data.message.trim() || isAnyLoading) return;
 
     // Initialize statuses
     setModelStatuses(
-      data.selectedModels.map(model => ({
+      data.selectedModels.map((model) => ({
         model,
         status: "pending",
       }))
@@ -155,20 +400,8 @@ export function CreateMultiModelBranch({
 
     try {
       // Send message to all selected models simultaneously
-      const promises = data.selectedModels.map(async (model, index) => {
-        setModelStatuses(prev => 
-          prev.map(status => 
-            status.model === model 
-              ? { ...status, status: "loading" }
-              : status
-          )
-        );
-        
-        return branchingChats[index].sendMessage(data.message.trim());
-      });
+      await sendMessageToAll(data.message.trim());
 
-      await Promise.allSettled(promises);
-      
       // Reset form after submission
       form.reset();
     } catch (error) {
@@ -310,7 +543,8 @@ export function CreateMultiModelBranch({
                           }}
                           disabled={
                             isAnyLoading ||
-                            (!field.value.includes(model.id) && field.value.length >= 4)
+                            (!field.value.includes(model.id) &&
+                              field.value.length >= 4)
                           }
                         />
                         <label
@@ -318,13 +552,17 @@ export function CreateMultiModelBranch({
                           className="flex-1 flex items-center justify-between cursor-pointer"
                         >
                           <div>
-                            <span className="text-sm font-medium">{model.name}</span>
+                            <span className="text-sm font-medium">
+                              {model.name}
+                            </span>
                             <span className="text-xs text-muted-foreground ml-2">
                               by {model.provider}
                             </span>
                           </div>
                           <Badge
-                            variant={model.tier === "premium" ? "default" : "secondary"}
+                            variant={
+                              model.tier === "premium" ? "default" : "secondary"
+                            }
                             className="text-xs"
                           >
                             {model.tier}
@@ -397,9 +635,7 @@ export function CreateMultiModelBranch({
                         {isAnyLoading ? (
                           <Button
                             type="button"
-                            onClick={() => {
-                              branchingChats.forEach(chat => chat.stop());
-                            }}
+                            onClick={stopAll}
                             variant="destructive"
                             className="flex-shrink-0"
                           >
@@ -436,7 +672,8 @@ export function CreateMultiModelBranch({
             />
 
             <p className="text-xs text-muted-foreground text-center">
-                             This will create separate branches for each selected model&apos;s response
+              This will create separate branches for each selected model&apos;s
+              response
             </p>
           </form>
         </Form>
@@ -444,10 +681,13 @@ export function CreateMultiModelBranch({
         {/* Error Display */}
         {hasAnyError && (
           <div className="space-y-2">
-            {branchingChats
-              .filter(chat => chat.error)
+            {activeChats
+              .filter((chat) => chat.error)
               .map((chat, index) => (
-                <div key={index} className="flex items-start space-x-2 text-destructive text-sm">
+                <div
+                  key={index}
+                  className="flex items-start space-x-2 text-destructive text-sm"
+                >
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <span>{chat.error?.message}</span>
                 </div>
@@ -457,4 +697,4 @@ export function CreateMultiModelBranch({
       </CardContent>
     </Card>
   );
-} 
+}
