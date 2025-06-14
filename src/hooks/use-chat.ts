@@ -1,5 +1,5 @@
-import { useChat as useAIChat } from '@ai-sdk/react';
-import { type Message } from '@/lib/schemas/chat';
+import { useChat as useAIChat } from "@ai-sdk/react";
+import { type Message } from "@/lib/schemas/chat";
 
 interface UseChatOptions {
   chatId?: string;
@@ -14,30 +14,31 @@ interface UseChatOptions {
 export function useChat({
   chatId,
   initialMessages = [],
-  model = 'openai/gpt-4o-mini',
+  model = "openai/gpt-4o-mini",
   maxTokens = 1000,
   temperature = 0.7,
   onFinish,
   onError,
 }: UseChatOptions = {}) {
-  
   const {
     messages,
     input,
     handleInputChange,
     handleSubmit,
-    isLoading,
+    status,
     error,
     stop,
     reload,
     setMessages,
     append,
   } = useAIChat({
-    api: '/api/chat',
+    api: "/api/chat",
     id: chatId,
-    initialMessages: initialMessages.map(msg => ({
+    initialMessages: initialMessages.map((msg) => ({
       ...msg,
-      createdAt: msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt),
+      createdAt:
+        msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt),
+      attachments: msg.attachments || [],
     })),
     body: {
       model,
@@ -47,46 +48,69 @@ export function useChat({
     onFinish: (message) => {
       const formattedMessage: Message = {
         id: message.id,
-        role: message.role as 'user' | 'assistant',
+        role: message.role as "user" | "assistant",
         content: message.content,
-        createdAt: message.createdAt || new Date(),
+        createdAt: message.createdAt ? new Date(message.createdAt) : new Date(),
         model,
         attachments: [],
+        xPosition: 0,
+        yPosition: 0,
+        nodeType: "conversation",
+        isCollapsed: false,
+        isLocked: false,
       };
       onFinish?.(formattedMessage);
     },
     onError: (error) => {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       onError?.(error);
     },
   });
 
   // Convert messages to our Message type
-  const formattedMessages: Message[] = messages.map(msg => ({
-    id: msg.id,
-    role: msg.role as 'user' | 'assistant',
-    content: msg.content,
-    createdAt: msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt || Date.now()),
-    model: msg.role === 'assistant' ? model : undefined,
-    attachments: [],
-  }));
+  const formattedMessages: Message[] = messages.map((msg) => {
+    const messageWithAttachments = msg as typeof msg & {
+      attachments?: Message["attachments"];
+    };
+    return {
+      id: msg.id,
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+      createdAt:
+        msg.createdAt instanceof Date
+          ? msg.createdAt
+          : new Date(msg.createdAt || Date.now()),
+      model: msg.role === "assistant" ? model : undefined,
+      attachments: messageWithAttachments.attachments || [],
+      xPosition: 0,
+      yPosition: 0,
+      nodeType: "conversation",
+      isCollapsed: false,
+      isLocked: false,
+    };
+  });
 
   return {
     messages: formattedMessages,
     input,
     handleInputChange,
     handleSubmit,
-    isLoading,
+    isLoading: status === "submitted" || status === "streaming",
     error,
     stop,
     reload,
     setMessages: (messages: Message[]) => {
-      setMessages(messages.map(msg => ({
-        ...msg,
-        createdAt: msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt),
-      })));
+      setMessages(
+        messages.map((msg) => ({
+          ...msg,
+          createdAt:
+            msg.createdAt instanceof Date
+              ? msg.createdAt
+              : new Date(msg.createdAt),
+        }))
+      );
     },
-    append: (message: { role: 'user' | 'assistant'; content: string }) => {
+    append: (message: { role: "user" | "assistant"; content: string }) => {
       return append({
         ...message,
         createdAt: new Date(),
@@ -94,10 +118,10 @@ export function useChat({
     },
     sendMessage: (content: string) => {
       return append({
-        role: 'user',
+        role: "user",
         content,
         createdAt: new Date(),
       });
     },
   };
-} 
+}

@@ -37,6 +37,9 @@ export default async function ChatPage({ params }: ChatPageProps) {
           model: msg.model || undefined,
           parentId: msg.parentId || undefined,
           branchName: msg.branchName || undefined,
+          attachments: msg.attachments || [],
+          lastEditedBy: msg.lastEditedBy || undefined,
+          editedAt: msg.editedAt ? msg.editedAt.toISOString() : undefined,
           createdAt: msg.createdAt.toISOString(),
         }))}
         userId={userData.user.id}

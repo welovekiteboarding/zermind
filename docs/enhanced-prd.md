@@ -253,8 +253,8 @@ CREATE INDEX messages_model_idx ON messages(model);
 ### **Day 5-6: Advanced Mind Features**
 - Multi-model branching visualization
 - Real-time collaboration basics
-- Mind map export functionality
 - Mobile-responsive mind map interface
+- Mind map export functionality (optional)
 
 ### **Day 7: Polish & Deploy**
 - Performance optimization

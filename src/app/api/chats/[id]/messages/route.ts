@@ -44,13 +44,16 @@ export async function POST(
           validatedData.role,
           validatedData.content,
           validatedData.model || undefined,
-          validatedData.branchName || undefined
+          validatedData.branchName || undefined,
+          validatedData.attachments || []
         )
       : await addMessage(
           chatId,
           validatedData.role,
           validatedData.content,
-          validatedData.model || undefined
+          validatedData.model || undefined,
+          undefined, // parentId
+          validatedData.attachments || []
         );
 
     return NextResponse.json({
@@ -61,6 +64,7 @@ export async function POST(
       model: savedMessage.model,
       parentId: savedMessage.parentId,
       branchName: savedMessage.branchName,
+      attachments: validatedData.attachments || [],
     });
   } catch (error) {
     console.error("Error saving message:", error);

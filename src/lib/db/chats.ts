@@ -4,7 +4,9 @@ import {
   ChatListItemSchema,
   type ChatWithMessages,
   type ChatListItem,
+  type Attachment,
 } from "@/lib/schemas/chat";
+import type { JsonValue } from "@prisma/client/runtime/library";
 
 import { randomBytes } from "crypto";
 
@@ -18,6 +20,50 @@ function generateShareId(): string {
     .replace(/=/g, ""); // Remove padding for cleaner URLs
 }
 
+// Helper function to safely parse message attachments
+function parseAttachments(attachments: JsonValue): Attachment[] {
+  try {
+    // If already an array, validate and return as Attachment[]
+    if (Array.isArray(attachments)) {
+      // Type guard to ensure it's an array of valid attachments
+      return attachments.filter(
+        (item): item is Attachment =>
+          item != null &&
+          typeof item === "object" &&
+          "id" in item &&
+          "name" in item
+      );
+    }
+
+    // If falsy (null, undefined, empty string), return empty array
+    if (!attachments) {
+      return [];
+    }
+
+    // Try to parse JSON string
+    if (typeof attachments === "string") {
+      const parsed = JSON.parse(attachments);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item): item is Attachment =>
+            item != null &&
+            typeof item === "object" &&
+            "id" in item &&
+            "name" in item
+        );
+      }
+      return [];
+    }
+
+    // Return empty array for other types (number, boolean, object)
+    return [];
+  } catch (error) {
+    // Log the error and return empty array for malformed JSON
+    console.warn("Failed to parse message attachments:", error);
+    return [];
+  }
+}
+
 // Get all chats for a user (for sidebar)
 export async function getUserChats(userId: string): Promise<ChatListItem[]> {
   const rawChats = await prisma.chat.findMany({
@@ -28,6 +74,8 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
       id: true,
       title: true,
       userId: true,
+      mode: true, // Added mode field
+      isCollaborative: true, // Added collaboration field
       createdAt: true,
       updatedAt: true,
       shareId: true,
@@ -40,6 +88,7 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
         select: {
           content: true,
           createdAt: true,
+          attachments: true,
         },
         orderBy: {
           createdAt: "desc",
@@ -52,8 +101,17 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
     },
   });
 
+  // Transform the raw data to match our schema
+  const transformedChats = rawChats.map((chat) => ({
+    ...chat,
+    messages: chat.messages.map((message) => ({
+      ...message,
+      attachments: parseAttachments(message.attachments),
+    })),
+  }));
+
   // Validate and transform the data using Zod
-  return rawChats.map((chat) => ChatListItemSchema.parse(chat));
+  return transformedChats.map((chat) => ChatListItemSchema.parse(chat));
 }
 
 // Get a single chat with all messages
@@ -77,8 +135,17 @@ export async function getChatWithMessages(
 
   if (!rawChat) return null;
 
+  // Transform the raw data to match our schema
+  const transformedChat = {
+    ...rawChat,
+    messages: rawChat.messages.map((message) => ({
+      ...message,
+      attachments: parseAttachments(message.attachments),
+    })),
+  };
+
   // Validate and transform the data using Zod
-  return ChatWithMessagesSchema.parse(rawChat);
+  return ChatWithMessagesSchema.parse(transformedChat);
 }
 
 // Create a new chat
@@ -124,7 +191,12 @@ export async function addMessage(
   role: "user" | "assistant",
   content: string,
   model?: string,
-  parentId?: string
+  parentId?: string,
+  attachments?: Attachment[],
+  xPosition?: number,
+  yPosition?: number,
+  nodeType?: "conversation" | "branching_point" | "insight",
+  branchName?: string
 ) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -138,7 +210,7 @@ export async function addMessage(
         },
       });
 
-      // Create the message
+      // Create the message with attachments and mind map positioning
       return await tx.message.create({
         data: {
           chatId,
@@ -146,6 +218,14 @@ export async function addMessage(
           content,
           model,
           parentId,
+          branchName,
+          xPosition: xPosition || 0,
+          yPosition: yPosition || 0,
+          nodeType: nodeType || "conversation",
+          attachments:
+            attachments && attachments.length > 0
+              ? JSON.stringify(attachments)
+              : "[]",
         },
       });
     });
@@ -162,7 +242,8 @@ export async function addBranchingMessage(
   role: "user" | "assistant",
   content: string,
   model?: string,
-  branchName?: string
+  branchName?: string,
+  attachments?: Attachment[]
 ) {
   try {
     return await prisma.$transaction(async (tx) => {
@@ -176,7 +257,7 @@ export async function addBranchingMessage(
         },
       });
 
-      // Create the branching message
+      // Create the branching message with attachments
       return await tx.message.create({
         data: {
           chatId,
@@ -185,6 +266,10 @@ export async function addBranchingMessage(
           content,
           model,
           branchName,
+          attachments:
+            attachments && attachments.length > 0
+              ? JSON.stringify(attachments)
+              : "[]",
         },
       });
     });
@@ -195,7 +280,10 @@ export async function addBranchingMessage(
 }
 
 // Get conversation context up to a specific node (for resuming)
-export async function getConversationContext(nodeId: string, userId: string): Promise<
+export async function getConversationContext(
+  nodeId: string,
+  userId: string
+): Promise<
   {
     id: string;
     role: string;
@@ -206,7 +294,7 @@ export async function getConversationContext(nodeId: string, userId: string): Pr
 > {
   // First get the specific message and verify ownership
   const targetMessage = await prisma.message.findFirst({
-    where: { 
+    where: {
       id: nodeId,
       chat: {
         userId: userId,
@@ -243,7 +331,7 @@ export async function getConversationContext(nodeId: string, userId: string): Pr
 
     if (currentMessage.parentId) {
       currentMessage = await prisma.message.findFirst({
-        where: { 
+        where: {
           id: currentMessage.parentId,
           chat: {
             userId: userId,
@@ -340,5 +428,53 @@ export async function removeShareLink(
   } catch (error) {
     console.error("Failed to remove share link:", error);
     return false;
+  }
+}
+
+// Check if user is the owner of a chat
+export async function isChatOwner(
+  chatId: string,
+  userId: string
+): Promise<boolean> {
+  try {
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: chatId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+    return !!chat;
+  } catch (error) {
+    console.error("Failed to check chat ownership:", error);
+    return false;
+  }
+}
+
+// Get basic chat info including collaborative status
+export async function getChatInfo(chatId: string): Promise<{
+  id: string;
+  userId: string;
+  isCollaborative: boolean;
+  title: string | null;
+} | null> {
+  try {
+    const chat = await prisma.chat.findFirst({
+      where: {
+        id: chatId,
+      },
+      select: {
+        id: true,
+        userId: true,
+        isCollaborative: true,
+        title: true,
+      },
+    });
+    return chat;
+  } catch (error) {
+    console.error("Failed to get chat info:", error);
+    return null;
   }
 }
