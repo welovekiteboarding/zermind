@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -72,7 +72,7 @@ export function useRealtimeCollaboration({
   const [userColor, setUserColor] = useState<string>("#3B82F6");
   const [shouldAnnounceJoin, setShouldAnnounceJoin] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   // Use refs for stable callback references
@@ -353,7 +353,7 @@ export function useRealtimeCollaboration({
       setCollaborativeUsers([]);
       setShouldAnnounceJoin(false);
     };
-  }, [chatId, userId, userName, supabase]); // Only include truly stable dependencies
+  }, [chatId, supabase, userId, userName]); // Only include truly stable dependencies
 
   return {
     isConnected,
