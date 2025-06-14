@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
 import { ResumeMessageInput } from "@/components/resume-message-input";
@@ -50,24 +51,22 @@ interface DualModeChatProps {
   chatTitle?: string;
 }
 
-// Error Boundary Component for Collaboration Features
-function CollaborationErrorBoundary({ children }: { children: React.ReactNode }) {
-  const [hasError, setHasError] = useState(false);
+// Error handler for collaboration features
+function handleCollaborationError(error: Error, errorInfo: unknown) {
+  // Log the error for debugging purposes
+  console.warn(
+    "Collaboration Error Boundary caught an error:",
+    error,
+    errorInfo
+  );
 
-  React.useEffect(() => {
-    const handleError = () => {
-      setHasError(true);
-    };
+  // You can also log the error to an error reporting service here
+  // Example: errorReportingService.captureException(error, { extra: errorInfo });
+}
 
-    window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
-  }, []);
-
-  if (hasError) {
-    return null; // Silently fail collaboration features
-  }
-
-  return <>{children}</>;
+// Fallback component for collaboration errors (silently fail)
+function CollaborationErrorFallback() {
+  return null; // Silently fail collaboration features without breaking the rest of the app
 }
 
 export function DualModeChat({
@@ -110,10 +109,8 @@ export function DualModeChat({
   }, [collaborationState]);
 
   // Safely extract values with defaults
-  const { 
-    collaborativeUsers = [], 
-    isConnected: isRealtimeConnected = false 
-  } = collaborationState || { collaborativeUsers: [], isConnected: false };
+  const { collaborativeUsers = [], isConnected: isRealtimeConnected = false } =
+    collaborationState || { collaborativeUsers: [], isConnected: false };
 
   // Handle resuming conversation from a specific node
   const handleResumeConversation = useCallback((nodeId: string) => {
@@ -173,7 +170,8 @@ export function DualModeChat({
   }));
 
   // Check if any action is active
-  const hasActiveAction = resumeFromNodeId || createBranchFromNodeId || createMultiModelFromNodeId;
+  const hasActiveAction =
+    resumeFromNodeId || createBranchFromNodeId || createMultiModelFromNodeId;
 
   if (mode === "mind") {
     return (
@@ -204,14 +202,17 @@ export function DualModeChat({
 
               {/* Collaboration Controls - Only show if no error */}
               {!collaborationError && (
-                <CollaborationErrorBoundary>
+                <ErrorBoundary
+                  FallbackComponent={CollaborationErrorFallback}
+                  onError={handleCollaborationError}
+                >
                   <CollaborationButton
                     chatId={chatId}
                     chatTitle={chatTitle}
                     currentUserRole="owner"
                     isRealtimeConnected={isRealtimeConnected}
                   />
-                </CollaborationErrorBoundary>
+                </ErrorBoundary>
               )}
 
               {/* Clear Actions Button */}
@@ -233,11 +234,14 @@ export function DualModeChat({
 
         {/* Collaboration Presence Indicator - Only show if no error */}
         {!collaborationError && collaborativeUsers.length > 0 && (
-          <CollaborationErrorBoundary>
+          <ErrorBoundary
+            FallbackComponent={CollaborationErrorFallback}
+            onError={handleCollaborationError}
+          >
             <div className="px-4 py-2 border-b bg-muted/30">
               <CollaborationPresence users={collaborativeUsers} />
             </div>
-          </CollaborationErrorBoundary>
+          </ErrorBoundary>
         )}
 
         {/* Mind Map View */}
@@ -251,9 +255,12 @@ export function DualModeChat({
 
           {/* Real-time Cursors Overlay - Only show if no error */}
           {!collaborationError && collaborativeUsers.length > 0 && (
-            <CollaborationErrorBoundary>
+            <ErrorBoundary
+              FallbackComponent={CollaborationErrorFallback}
+              onError={handleCollaborationError}
+            >
               <RealtimeCursors users={collaborativeUsers} />
-            </CollaborationErrorBoundary>
+            </ErrorBoundary>
           )}
         </div>
 
@@ -317,14 +324,17 @@ export function DualModeChat({
 
             {/* Collaboration Controls - Only show if no error */}
             {!collaborationError && (
-              <CollaborationErrorBoundary>
+              <ErrorBoundary
+                FallbackComponent={CollaborationErrorFallback}
+                onError={handleCollaborationError}
+              >
                 <CollaborationButton
                   chatId={chatId}
                   chatTitle={chatTitle}
                   currentUserRole="owner"
                   isRealtimeConnected={isRealtimeConnected}
                 />
-              </CollaborationErrorBoundary>
+              </ErrorBoundary>
             )}
           </div>
         </div>
