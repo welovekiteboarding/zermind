@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
     const channel = supabase.channel(roomName);
 
     try {
+      // Subscribe to the channel before sending
+      await channel.subscribe();
+
       // Send the user leave broadcast
       await channel.send({
         type: "broadcast",
