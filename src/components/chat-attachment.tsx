@@ -71,6 +71,13 @@ export function ChatAttachment({
         throw error;
       }
 
+      if (!data || !data.signedUrl) {
+        const errorMessage =
+          "Failed to create signed URL: No data or signed URL returned";
+        console.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+
       return data.signedUrl;
     } catch (error) {
       console.error("Failed to generate signed URL:", error);
