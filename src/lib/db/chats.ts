@@ -6,6 +6,7 @@ import {
   type ChatListItem,
   type Attachment,
 } from "@/lib/schemas/chat";
+import type { JsonValue } from "@prisma/client/runtime/library";
 
 import { randomBytes } from "crypto";
 
@@ -17,6 +18,50 @@ function generateShareId(): string {
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=/g, ""); // Remove padding for cleaner URLs
+}
+
+// Helper function to safely parse message attachments
+function parseAttachments(attachments: JsonValue): Attachment[] {
+  try {
+    // If already an array, validate and return as Attachment[]
+    if (Array.isArray(attachments)) {
+      // Type guard to ensure it's an array of valid attachments
+      return attachments.filter(
+        (item): item is Attachment =>
+          item != null &&
+          typeof item === "object" &&
+          "id" in item &&
+          "name" in item
+      );
+    }
+
+    // If falsy (null, undefined, empty string), return empty array
+    if (!attachments) {
+      return [];
+    }
+
+    // Try to parse JSON string
+    if (typeof attachments === "string") {
+      const parsed = JSON.parse(attachments);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item): item is Attachment =>
+            item != null &&
+            typeof item === "object" &&
+            "id" in item &&
+            "name" in item
+        );
+      }
+      return [];
+    }
+
+    // Return empty array for other types (number, boolean, object)
+    return [];
+  } catch (error) {
+    // Log the error and return empty array for malformed JSON
+    console.warn("Failed to parse message attachments:", error);
+    return [];
+  }
 }
 
 // Get all chats for a user (for sidebar)
@@ -59,19 +104,10 @@ export async function getUserChats(userId: string): Promise<ChatListItem[]> {
   // Transform the raw data to match our schema
   const transformedChats = rawChats.map((chat) => ({
     ...chat,
-    messages: chat.messages.map((message) => {
-      // Parse attachments JSON back to array
-      const attachments = Array.isArray(message.attachments)
-        ? message.attachments
-        : message.attachments
-        ? JSON.parse(message.attachments as string)
-        : [];
-
-      return {
-        ...message,
-        attachments: attachments || [],
-      };
-    }),
+    messages: chat.messages.map((message) => ({
+      ...message,
+      attachments: parseAttachments(message.attachments),
+    })),
   }));
 
   // Validate and transform the data using Zod
@@ -102,19 +138,10 @@ export async function getChatWithMessages(
   // Transform the raw data to match our schema
   const transformedChat = {
     ...rawChat,
-    messages: rawChat.messages.map((message) => {
-      // Parse attachments JSON back to array
-      const attachments = Array.isArray(message.attachments)
-        ? message.attachments
-        : message.attachments
-        ? JSON.parse(message.attachments as string)
-        : [];
-
-      return {
-        ...message,
-        attachments: attachments || [],
-      };
-    }),
+    messages: rawChat.messages.map((message) => ({
+      ...message,
+      attachments: parseAttachments(message.attachments),
+    })),
   };
 
   // Validate and transform the data using Zod
