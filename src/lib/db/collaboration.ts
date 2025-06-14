@@ -7,73 +7,75 @@ export async function createOrJoinCollaborationSession(
   userId: string,
   role: "owner" | "collaborator" | "viewer" = "collaborator"
 ): Promise<CollaborationSession & { participants: SessionParticipant[] }> {
-  // Check if there's already an active session for this chat
-  let session = await prisma.collaborationSession.findFirst({
-    where: {
-      chatId,
-      lastActivity: {
-        // Consider session active if activity within last 5 minutes
-        gte: new Date(Date.now() - 5 * 60 * 1000),
-      },
-    },
-    include: {
-      participants: true,
-    },
-  });
-
-  if (session) {
-    // Join existing session if not already a participant
-    const existingParticipant = session.participants.find(
-      (p) => p.userId === userId
-    );
-
-    if (!existingParticipant) {
-      await prisma.sessionParticipant.create({
-        data: {
-          sessionId: session.id,
-          userId,
-          role,
+  return await prisma.$transaction(async (tx) => {
+    // Check if there's already an active session for this chat
+    let session = await tx.collaborationSession.findFirst({
+      where: {
+        chatId,
+        lastActivity: {
+          // Consider session active if activity within last 5 minutes
+          gte: new Date(Date.now() - 5 * 60 * 1000),
         },
+      },
+      include: {
+        participants: true,
+      },
+    });
+
+    if (session) {
+      // Join existing session if not already a participant
+      const existingParticipant = session.participants.find(
+        (p) => p.userId === userId
+      );
+
+      if (!existingParticipant) {
+        await tx.sessionParticipant.create({
+          data: {
+            sessionId: session.id,
+            userId,
+            role,
+          },
+        });
+      } else {
+        // Update participant activity
+        await tx.sessionParticipant.update({
+          where: { id: existingParticipant.id },
+          data: { lastActivity: new Date() },
+        });
+      }
+
+      // Update last activity
+      session = await tx.collaborationSession.update({
+        where: { id: session.id },
+        data: { lastActivity: new Date() },
+        include: { participants: true },
       });
     } else {
-      // Update participant activity
-      await prisma.sessionParticipant.update({
-        where: { id: existingParticipant.id },
-        data: { lastActivity: new Date() },
+      // Create new session - first participant is always owner
+      const participantRole = "owner";
+
+      session = await tx.collaborationSession.create({
+        data: {
+          chatId,
+          participants: {
+            create: {
+              userId,
+              role: participantRole,
+            },
+          },
+        },
+        include: { participants: true },
+      });
+
+      // Mark the chat as collaborative
+      await tx.chat.update({
+        where: { id: chatId },
+        data: { isCollaborative: true },
       });
     }
 
-    // Update last activity
-    session = await prisma.collaborationSession.update({
-      where: { id: session.id },
-      data: { lastActivity: new Date() },
-      include: { participants: true },
-    });
-  } else {
-    // Create new session - first participant is owner
-    const participantRole = role === "collaborator" ? "owner" : role;
-
-    session = await prisma.collaborationSession.create({
-      data: {
-        chatId,
-        participants: {
-          create: {
-            userId,
-            role: participantRole,
-          },
-        },
-      },
-      include: { participants: true },
-    });
-
-    // Mark the chat as collaborative
-    await prisma.chat.update({
-      where: { id: chatId },
-      data: { isCollaborative: true },
-    });
-  }
-
-  return session;
+    return session;
+  });
 }
 
 // Leave a collaboration session
@@ -386,7 +388,8 @@ export async function createOrJoinWithAccessControl(
     else if (isCollaborative && !session) {
       return {
         success: false,
-        error: "No active collaboration session. Only chat owner can start collaboration.",
+        error:
+          "No active collaboration session. Only chat owner can start collaboration.",
       };
     }
     // If chat is not collaborative, only owner can access
