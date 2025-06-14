@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AttachmentSchema } from "./chat";
 
 // Node type enum for mind map
 export const nodeTypeSchema = z.enum([
@@ -93,7 +94,7 @@ export const mindMapMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string(),
   model: z.string().nullable(),
-  attachments: z.array(z.unknown()).default([]),
+  attachments: z.array(AttachmentSchema).default([]),
   xPosition: z.number(),
   yPosition: z.number(),
   nodeType: nodeTypeSchema,
