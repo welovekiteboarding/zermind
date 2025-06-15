@@ -102,7 +102,7 @@ export default function DemoLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="bg-background flex items-center justify-center">
       <AppHeader />
       {children}
     </div>
