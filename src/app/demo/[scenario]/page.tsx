@@ -1,29 +1,6 @@
 import { DemoScenarioClient } from "./demo-scenario-client";
 import { notFound } from "next/navigation";
-
-// Define available demo scenarios
-const DEMO_SCENARIOS = {
-  "ai-comparison": {
-    title: "AI Model Comparison Demo",
-    description: "See how different AI models approach the same question",
-    keywords: [
-      "AI comparison",
-      "GPT-4 vs Claude",
-      "model comparison",
-      "AI debate",
-    ],
-  },
-  "creative-writing": {
-    title: "Creative Writing with AI",
-    description: "Explore different narrative styles and creative approaches",
-    keywords: ["creative writing", "AI storytelling", "narrative branching"],
-  },
-  "problem-solving": {
-    title: "Complex Problem Solving",
-    description: "Break down complex problems using multiple AI perspectives",
-    keywords: ["problem solving", "AI analysis", "multiple perspectives"],
-  },
-};
+import { DEMO_SCENARIOS } from "@/constants/demo-scenarios";
 
 type Props = {
   params: Promise<{ scenario: string }>;

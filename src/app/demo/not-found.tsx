@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Brain, ArrowLeft, Search } from "lucide-react";
+import { DEMO_SCENARIOS } from "@/constants/demo-scenarios";
 
 export default function DemoNotFound() {
   return (
@@ -40,9 +41,9 @@ export default function DemoNotFound() {
           <div className="text-sm text-muted-foreground">
             <p>Available demos:</p>
             <ul className="mt-2 space-y-1">
-              <li>• AI Model Comparison</li>
-              <li>• Creative Writing</li>
-              <li>• Problem Solving</li>
+              {Object.entries(DEMO_SCENARIOS).map(([key, scenario]) => (
+                <li key={key}>• {scenario.title}</li>
+              ))}
             </ul>
           </div>
         </CardContent>
