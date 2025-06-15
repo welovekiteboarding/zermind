@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ArrowRight, LogIn, Eye, Heart } from "lucide-react";
+import { ArrowRight, LogIn, Heart } from "lucide-react";
 import Link from "next/link";
 
 // GitHub Icon Component
@@ -66,30 +65,6 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
 
   return (
     <div className="flex flex-col bg-background py-20">
-      {/* Demo Progress */}
-      <div className="px-4 py-3 border-b border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Demo Progress</span>
-          <span className="font-medium">
-            {currentStep + 1} / {demoSteps.length}
-          </span>
-          <Badge
-            variant="secondary"
-            className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-          >
-            <Eye className="h-3 w-3 mr-1" />
-            Demo Mode
-          </Badge>
-        </div>
-        <Progress
-          value={((currentStep + 1) / demoSteps.length) * 100}
-          className="mt-2"
-        />
-        <p className="text-sm text-muted-foreground mt-2">
-          {demoSteps[currentStep]}
-        </p>
-      </div>
-
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Demo Conversations */}
         <div className="space-y-4">
