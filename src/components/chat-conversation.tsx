@@ -74,8 +74,8 @@ interface ChatConversationProps {
   userId: string;
   chatTitle?: string;
   model?: string;
-  isSharedView?: boolean; // New prop for read-only mode
-  onSendMessage?: () => boolean; // Returns false to prevent sending
+  isSharedView?: boolean;
+  onSendMessage?: () => boolean | void;
 }
 
 export function ChatConversation({
@@ -188,7 +188,8 @@ export function ChatConversation({
     if (!data.message.trim() || isLoading) return;
 
     // Call onSendMessage hook if provided (for demo limits, etc.)
-    if (onSendMessage && !onSendMessage()) return;
+    // Only prevent sending if it explicitly returns false
+    if (onSendMessage && onSendMessage() === false) return;
 
     try {
       const userMessage = data.message.trim();

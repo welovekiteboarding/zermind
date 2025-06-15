@@ -352,7 +352,7 @@ export function DemoConversationView({
             initialMessages={conversationMessages}
             userId="demo-user"
             chatTitle={demoData.title}
-            isSharedView={true}
+            isSharedView={false}
             onSendMessage={handleMessageAttempt}
           />
         </div>
