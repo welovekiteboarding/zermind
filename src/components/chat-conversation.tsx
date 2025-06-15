@@ -75,6 +75,7 @@ interface ChatConversationProps {
   chatTitle?: string;
   model?: string;
   isSharedView?: boolean;
+  isDemo?: boolean;
   onSendMessage?: () => boolean | void;
 }
 
@@ -85,6 +86,7 @@ export function ChatConversation({
   chatTitle,
   model: initialModel = "openai/gpt-4o-mini",
   isSharedView = false,
+  isDemo = false,
   onSendMessage,
 }: ChatConversationProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -113,6 +115,12 @@ export function ChatConversation({
     initialMessages,
     model: selectedModel,
     onFinish: (message) => {
+      // Skip database operations in demo mode
+      if (isDemo) {
+        console.log("Demo: Message finished:", message);
+        return;
+      }
+
       try {
         // Save assistant message to database
         saveMessageMutation.mutate({
@@ -202,37 +210,42 @@ export function ChatConversation({
       const shouldUpdateTitle =
         isFirstMessage && shouldUpdateChatTitle(chatTitle || null);
 
-      // Save user message to database FIRST with current timestamp
-      // This ensures proper chronological ordering
-      try {
-        // Upload files first if any
-        let attachments: Attachment[] = [];
-        if (fileAttachments.pendingFiles.length > 0) {
-          try {
-            attachments = await fileAttachments.uploadFiles();
-          } catch (error) {
-            console.error("Failed to upload files:", error);
-            throw new Error("Failed to upload attachments. Please try again.");
+      // Skip database operations in demo mode
+      if (!isDemo) {
+        // Save user message to database FIRST with current timestamp
+        // This ensures proper chronological ordering
+        try {
+          // Upload files first if any
+          let attachments: Attachment[] = [];
+          if (fileAttachments.pendingFiles.length > 0) {
+            try {
+              attachments = await fileAttachments.uploadFiles();
+            } catch (error) {
+              console.error("Failed to upload files:", error);
+              throw new Error(
+                "Failed to upload attachments. Please try again."
+              );
+            }
           }
-        }
 
-        await saveMessageMutation.mutateAsync({
-          chatId,
-          message: {
-            role: "user",
-            content: userMessage,
-            model: null, // User messages don't have a model
-            attachments,
-            xPosition: 0,
-            yPosition: 0,
-            nodeType: "conversation",
-            isCollapsed: false,
-            isLocked: false,
-          },
-        });
-      } catch (error) {
-        console.error("Failed to save user message:", error);
-        throw new Error("Failed to save your message. Please try again.");
+          await saveMessageMutation.mutateAsync({
+            chatId,
+            message: {
+              role: "user",
+              content: userMessage,
+              model: null, // User messages don't have a model
+              attachments,
+              xPosition: 0,
+              yPosition: 0,
+              nodeType: "conversation",
+              isCollapsed: false,
+              isLocked: false,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to save user message:", error);
+          throw new Error("Failed to save your message. Please try again.");
+        }
       }
 
       // Reset form and send message to AI
@@ -245,8 +258,8 @@ export function ChatConversation({
         throw new Error("Failed to get AI response. Please try again.");
       }
 
-      // Update chat title if this is the first user message
-      if (shouldUpdateTitle) {
+      // Update chat title if this is the first user message (skip in demo mode)
+      if (!isDemo && shouldUpdateTitle) {
         try {
           const newTitle = generateChatTitle(userMessage);
           await updateChatTitleMutation.mutateAsync({

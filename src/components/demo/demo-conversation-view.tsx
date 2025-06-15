@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
@@ -35,6 +35,13 @@ export function DemoConversationView({
 
   const MAX_DEMO_MESSAGES = 5;
   const isLimitReached = userMessages >= MAX_DEMO_MESSAGES;
+
+  // Generate a unique chatId for this demo session
+  const demoChatId = useMemo(() => {
+    return `demo-${scenario}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+  }, [scenario]);
 
   const demoData =
     DEMO_CONVERSATIONS[scenario as keyof typeof DEMO_CONVERSATIONS];
@@ -348,11 +355,12 @@ export function DemoConversationView({
         {/* Traditional Chat Interface */}
         <div className="flex-1 overflow-hidden">
           <ChatConversation
-            chatId="demo-chat"
+            chatId={demoChatId}
             initialMessages={conversationMessages}
             userId="demo-user"
             chatTitle={demoData.title}
             isSharedView={false}
+            isDemo={true}
             onSendMessage={handleMessageAttempt}
           />
         </div>
