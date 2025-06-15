@@ -4,6 +4,15 @@ import {
   type Feedback,
   type CreateFeedback,
 } from "@/lib/schemas/feedback";
+import { z } from "zod";
+
+// Define Zod schema for valid feedback status values
+const FeedbackStatusSchema = z.enum([
+  "open",
+  "in_progress",
+  "resolved",
+  "closed",
+]);
 
 // Create new feedback
 export async function createFeedback(
@@ -61,6 +70,15 @@ export async function updateFeedbackStatus(
   feedbackId: string,
   status: "open" | "in_progress" | "resolved" | "closed"
 ): Promise<Feedback> {
+  // Validate status parameter before database update
+  try {
+    FeedbackStatusSchema.parse(status);
+  } catch {
+    throw new Error(
+      `Invalid feedback status: ${status}. Must be one of: open, in_progress, resolved, closed`
+    );
+  }
+
   const rawFeedback = await prisma.feedback.update({
     where: {
       id: feedbackId,
