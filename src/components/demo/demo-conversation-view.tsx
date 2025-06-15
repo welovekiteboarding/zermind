@@ -109,7 +109,7 @@ export function DemoConversationView({
 
   if (mode === "mind") {
     return (
-      <div className="h-screen w-full py-12 sm:py-16 lg:py-20">
+      <div className="h-screen w-full py-16 sm:py-16 lg:py-20">
         <div className="flex flex-col h-full">
           {/* Mind Mode Header */}
           <div className="border-b border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -252,7 +252,7 @@ export function DemoConversationView({
 
   // Traditional Chat Mode
   return (
-    <div className="h-screen w-full py-12 sm:py-16 lg:py-20">
+    <div className="h-screen w-full py-16 sm:py-16 lg:py-20">
       <div className="flex flex-col w-full h-full">
         {/* Chat Mode Header */}
         <div className="border-b border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
