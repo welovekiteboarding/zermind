@@ -64,36 +64,40 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
   }, [currentStep, demoSteps.length]);
 
   return (
-    <div className="flex flex-col bg-background py-20">
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+    <div className="flex flex-col bg-background py-6 sm:py-12 lg:py-20 min-h-screen">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
         {/* Demo Conversations */}
-        <div className="space-y-4">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Interactive Demos</h2>
-            <p className="text-muted-foreground text-sm">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="text-center px-2">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-1 sm:mb-2">
+              Interactive Demos
+            </h2>
+            <p className="text-muted-foreground text-xs sm:text-sm lg:text-base max-w-2xl mx-auto">
               Experience both Chat and Mind modes with pre-built conversations
             </p>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-3 sm:gap-4 max-w-4xl mx-auto">
             {Object.entries(DEMO_CONVERSATIONS).map(([key, demo]) => (
               <Link key={key} href={`/demo/${key}`}>
-                <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 border-primary/10 hover:border-primary/30">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{demo.title}</CardTitle>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <Card className="cursor-pointer transition-all duration-200 border-2 border-primary/10 hover:border-primary/30 active:scale-[0.98] sm:hover:shadow-lg sm:hover:scale-[1.02] touch-manipulation">
+                  <CardHeader className="pb-2 sm:pb-3">
+                    <div className="flex items-start sm:items-center justify-between gap-3">
+                      <CardTitle className="text-base sm:text-lg lg:text-xl leading-tight">
+                        {demo.title}
+                      </CardTitle>
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">
+                  <CardContent className="pt-0">
+                    <p className="text-xs sm:text-sm lg:text-base text-muted-foreground mb-3 leading-relaxed">
                       {demo.description}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant="outline" className="text-xs sm:text-sm px-2 py-1">
                         {demo.messageCount} messages
                       </Badge>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs sm:text-sm px-2 py-1">
                         Interactive Demo
                       </Badge>
                     </div>
@@ -105,26 +109,30 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
         </div>
 
         {/* Upgrade CTA */}
-        <Card className="border-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">
+        <Card className="border-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 max-w-4xl mx-auto">
+          <CardHeader className="text-center pb-3 sm:pb-4">
+            <CardTitle className="text-lg sm:text-xl lg:text-2xl px-2">
               Ready for the Full Experience?
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
+          <CardContent className="text-center space-y-3 sm:space-y-4">
+            <p className="text-muted-foreground text-xs sm:text-sm lg:text-base leading-relaxed max-w-2xl mx-auto px-2">
               Sign in to unlock unlimited conversations, real-time
               collaboration, and advanced features
             </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:gap-2 justify-center px-2">
               <Button
                 onClick={onUpgrade}
-                className="bg-primary hover:bg-primary/80"
+                className="bg-primary hover:bg-primary/80 w-full sm:w-auto min-h-[44px] text-sm sm:text-base px-6 py-3 touch-manipulation"
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In to Continue
               </Button>
-              <Button variant="outline" asChild>
+              <Button 
+                variant="outline" 
+                asChild 
+                className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base px-6 py-3 touch-manipulation"
+              >
                 <Link
                   href="https://github.com/okikeSolutions/zermind"
                   target="_blank"
@@ -137,54 +145,54 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-2 sm:space-y-3">
-          <p>
+        <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-3 sm:space-y-4 max-w-4xl mx-auto px-2 pb-4 sm:pb-6">
+          <p className="leading-relaxed">
             Open source • Privacy-focused • Built for{" "}
             <Link
               href="https://cloneathon.t3.chat"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline touch-manipulation"
             >
               Cloneathon 2025
             </Link>
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
             <Link
               href="/privacy"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline touch-manipulation min-h-[44px] flex items-center"
             >
               Privacy Policy
             </Link>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <Link
               href="/terms"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline touch-manipulation min-h-[44px] flex items-center"
             >
               Terms of Use
             </Link>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <Link
               href="/imprint"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline touch-manipulation min-h-[44px] flex items-center"
             >
               Imprint
             </Link>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
             <Link
               href="https://github.com/okikeSolutions/zermind"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1.5 touch-manipulation min-h-[44px]"
             >
               <GitHubIcon className="h-3 w-3 sm:h-4 sm:w-4" />
               GitHub Repo
             </Link>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <Link
               href="https://github.com/sponsors/okikeSolutions"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1.5 touch-manipulation min-h-[44px]"
             >
               <Heart className="h-3 w-3 sm:h-4 sm:w-4 fill-primary" />
               Support Zermind
