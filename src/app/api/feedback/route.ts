@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createFeedback } from "@/lib/db/feedback";
 import { CreateFeedbackSchema } from "@/lib/schemas/feedback";
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     console.error("Error creating feedback:", error);
 
     // Handle validation errors
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof ZodError) {
       return NextResponse.json(
         { error: "Invalid input data" },
         { status: 400 }
