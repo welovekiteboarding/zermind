@@ -136,6 +136,7 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
                 <Link
                   href="https://github.com/okikeSolutions/zermind"
                   target="_blank"
+                  rel="noopener noreferrer"
                 >
                   View Source Code
                 </Link>

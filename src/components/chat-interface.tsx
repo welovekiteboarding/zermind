@@ -472,6 +472,8 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <span>•</span>
           <Link
             href="https://github.com/sponsors/okikeSolutions"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline inline-flex items-center gap-1"
           >
             <Heart className="h-3 w-3 sm:h-4 sm:w-4 fill-primary" />
