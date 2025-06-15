@@ -75,6 +75,7 @@ interface ChatConversationProps {
   chatTitle?: string;
   model?: string;
   isSharedView?: boolean; // New prop for read-only mode
+  onSendMessage?: () => boolean; // Returns false to prevent sending
 }
 
 export function ChatConversation({
@@ -84,6 +85,7 @@ export function ChatConversation({
   chatTitle,
   model: initialModel = "openai/gpt-4o-mini",
   isSharedView = false,
+  onSendMessage,
 }: ChatConversationProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
@@ -184,6 +186,9 @@ export function ChatConversation({
 
   const handleSendMessage = async (data: MessageFormData) => {
     if (!data.message.trim() || isLoading) return;
+
+    // Call onSendMessage hook if provided (for demo limits, etc.)
+    if (onSendMessage && !onSendMessage()) return;
 
     try {
       const userMessage = data.message.trim();
