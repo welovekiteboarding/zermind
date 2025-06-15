@@ -12,7 +12,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 100,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-2",
@@ -25,7 +24,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 50,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-3",
@@ -39,7 +37,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 150,
         nodeType: "branching_point" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
     ],
   },
@@ -56,7 +53,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 100,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-5",
@@ -70,7 +66,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 50,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-6",
@@ -81,7 +76,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 50,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
     ],
   },
@@ -98,7 +92,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 100,
         nodeType: "conversation" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-8",
@@ -112,7 +105,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 50,
         nodeType: "insight" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
       {
         id: "demo-9",
@@ -126,7 +118,6 @@ export const DEMO_CONVERSATIONS = {
         yPosition: 200,
         nodeType: "insight" as const,
         isCollapsed: false,
-        createdAt: new Date().toISOString(),
       },
     ],
   },
