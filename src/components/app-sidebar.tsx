@@ -45,6 +45,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeSwitcher } from "./theme-switcher";
+import { FeedbackDialog } from "./feedback-dialog";
 import {
   useUserChats,
   useCreateChat,
@@ -350,6 +351,22 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t p-2 sm:p-4">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="mb-2">
+              <FeedbackDialog>
+                <Button
+                  variant="outline"
+                  className="w-full h-9 sm:h-10 px-2 sm:px-3"
+                  size="sm"
+                >
+                  <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm ml-1.5 sm:ml-2 truncate">
+                    Feedback
+                  </span>
+                </Button>
+              </FeedbackDialog>
+            </div>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="mb-2">
               <ThemeSwitcher />

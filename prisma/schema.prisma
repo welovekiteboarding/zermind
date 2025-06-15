@@ -51,22 +51,22 @@ model Chat {
 
 // Message model - represents individual messages in a chat with branching support
 model Message {
-  id            String   @id @default(cuid())
-  chatId        String   @map("chat_id")
-  parentId      String?  @map("parent_id") // For conversation branching
-  branchName    String?  @map("branch_name") // User-defined branch labels
-  role          String // 'user' or 'assistant'
-  content       String // The message content
-  model         String? // Optional: which LLM model was used for assistant messages
-  attachments   Json     @default("[]") // Store attachments as JSON array
-  xPosition     Float    @default(0) @map("x_position") // Mind map coordinates
-  yPosition     Float    @default(0) @map("y_position") // Mind map coordinates
-  nodeType      NodeType @default(conversation) @map("node_type") // Type of node
-  isCollapsed   Boolean  @default(false) @map("is_collapsed") // For mind map UI state
-  isLocked      Boolean  @default(false) @map("is_locked") // For preventing concurrent edits
-  lastEditedBy  String?  @map("last_edited_by") // User ID who last edited (for collaboration)
-  editedAt      DateTime? @map("edited_at") // When last edited (for collaboration)
-  createdAt     DateTime @default(now()) @map("created_at")
+  id           String    @id @default(cuid())
+  chatId       String    @map("chat_id")
+  parentId     String?   @map("parent_id") // For conversation branching
+  branchName   String?   @map("branch_name") // User-defined branch labels
+  role         String // 'user' or 'assistant'
+  content      String // The message content
+  model        String? // Optional: which LLM model was used for assistant messages
+  attachments  Json      @default("[]") // Store attachments as JSON array
+  xPosition    Float     @default(0) @map("x_position") // Mind map coordinates
+  yPosition    Float     @default(0) @map("y_position") // Mind map coordinates
+  nodeType     NodeType  @default(conversation) @map("node_type") // Type of node
+  isCollapsed  Boolean   @default(false) @map("is_collapsed") // For mind map UI state
+  isLocked     Boolean   @default(false) @map("is_locked") // For preventing concurrent edits
+  lastEditedBy String?   @map("last_edited_by") // User ID who last edited (for collaboration)
+  editedAt     DateTime? @map("edited_at") // When last edited (for collaboration)
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   // Relations
   chat                 Chat                  @relation(fields: [chatId], references: [id], onDelete: Cascade)
@@ -145,12 +145,12 @@ model ConversationTemplate {
 
 // Real-time Collaboration Sessions
 model CollaborationSession {
-  id             String   @id @default(cuid())
-  chatId         String   @map("chat_id")
-  activeSince    DateTime @default(now()) @map("active_since")
-  lastActivity   DateTime @default(now()) @map("last_activity")
-  maxParticipants Int?    @map("max_participants") // Optional participant limit
-  settings       Json?    @default("{}") // Collaboration preferences (permissions, etc.)
+  id              String   @id @default(cuid())
+  chatId          String   @map("chat_id")
+  activeSince     DateTime @default(now()) @map("active_since")
+  lastActivity    DateTime @default(now()) @map("last_activity")
+  maxParticipants Int?     @map("max_participants") // Optional participant limit
+  settings        Json?    @default("{}") // Collaboration preferences (permissions, etc.)
 
   // Relations
   chat         Chat                 @relation(fields: [chatId], references: [id], onDelete: Cascade)
@@ -177,7 +177,7 @@ model SessionParticipant {
   role         ParticipantRole @default(collaborator) // Participant permissions
   joinedAt     DateTime        @default(now()) @map("joined_at")
   lastActivity DateTime        @default(now()) @map("last_activity") // Track individual activity
-  
+
   // Relations
   session CollaborationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -211,4 +211,25 @@ model ConversationInsight {
   @@index([insightType]) // For filtering by insight type
   @@index([createdAt(sort: Desc)]) // For latest insights
   @@map("conversation_insights")
+}
+
+// User Feedback model
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id") // References Supabase auth.users.id
+  message   String // Feedback content
+  type      String   @default("general") // Type of feedback (bug, feature, general, etc.)
+  status    String   @default("open") // Status (open, in_progress, resolved, closed)
+  priority  String   @default("medium") // Priority (low, medium, high, critical)
+  userAgent String?  @map("user_agent") // Browser/device info
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Indexes for better query performance
+  @@index([userId]) // For user-specific feedback queries
+  @@index([type]) // For filtering by feedback type
+  @@index([status]) // For filtering by feedback status
+  @@index([priority]) // For filtering by priority
+  @@index([createdAt(sort: Desc)]) // For latest feedback
+  @@map("feedback")
 }
