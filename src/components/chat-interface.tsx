@@ -118,10 +118,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
             <Button
               onClick={handleTryDemo}
               variant="outline"
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none"
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none h-10 sm:h-12 text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] touch-manipulation"
             >
-              <PlayCircle className="h-4 w-4 mr-2" />
-              Try Interactive Demo (No Sign-up Required)
+              <PlayCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+              <span className="text-center leading-tight">
+                Try Interactive Demo
+                <br className="sm:hidden" />
+                <span className="sm:ml-1">(No Sign-up Required)</span>
+              </span>
             </Button>
           </div>
         )}

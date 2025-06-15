@@ -70,7 +70,7 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
   }, [currentStep, demoSteps.length]);
 
   return (
-    <div className="flex flex-col bg-background py-6 sm:py-12 lg:py-20 min-h-screen">
+    <div className="flex flex-col bg-background py-16 sm:py-16 lg:py-20 min-h-screen">
       <div className="flex-1 overflow-y-auto px-3 sm:px-4 lg:px-6 space-y-4 sm:space-y-6">
         {/* Demo Conversations */}
         <div className="space-y-3 sm:space-y-4">
