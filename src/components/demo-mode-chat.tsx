@@ -35,6 +35,7 @@ const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 interface DemoModeChatProps {
   onUpgrade: () => void;
+  selectedScenario?: string;
 }
 
 // Pre-populated demo conversations highlighting key features
@@ -171,9 +172,12 @@ const DEMO_CONVERSATIONS = {
   },
 };
 
-export function DemoModeChat({ onUpgrade }: DemoModeChatProps) {
+export function DemoModeChat({
+  onUpgrade,
+  selectedScenario,
+}: DemoModeChatProps) {
   const { mode } = useChatModeStore();
-  const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
+  const selectedDemo = selectedScenario || null;
   const [userMessages, setUserMessages] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -200,12 +204,8 @@ export function DemoModeChat({ onUpgrade }: DemoModeChatProps) {
     }
   }, [currentStep, demoSteps.length]);
 
-  const handleDemoSelect = useCallback((demoKey: string) => {
-    setSelectedDemo(demoKey);
-  }, []);
-
   const handleBackToSelection = useCallback(() => {
-    setSelectedDemo(null);
+    window.history.back();
   }, []);
 
   const handleMessageAttempt = useCallback(() => {
@@ -256,31 +256,29 @@ export function DemoModeChat({ onUpgrade }: DemoModeChatProps) {
 
             <div className="grid gap-4">
               {Object.entries(DEMO_CONVERSATIONS).map(([key, demo]) => (
-                <Card
-                  key={key}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 border-primary/10 hover:border-primary/30"
-                  onClick={() => handleDemoSelect(key)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{demo.title}</CardTitle>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {demo.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {demo.messages.length} messages
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        Interactive Demo
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Link key={key} href={`/demo/${key}`}>
+                  <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] border-2 border-primary/10 hover:border-primary/30">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{demo.title}</CardTitle>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {demo.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs">
+                          {demo.messages.length} messages
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Interactive Demo
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </div>
