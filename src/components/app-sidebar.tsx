@@ -141,7 +141,9 @@ export function AppSidebar() {
   };
 
   const getChatDisplayInfo = (chat: (typeof chatSessions)[0]) => {
-    const title = chat.title || "New Chat";
+    const rawTitle = chat.title || "New Chat";
+    const title =
+      rawTitle.length > 15 ? rawTitle.substring(0, 15) + "..." : rawTitle;
     const lastMessage = chat.messages[0]?.content || "No messages yet";
     const truncatedMessage =
       lastMessage.length > 20
