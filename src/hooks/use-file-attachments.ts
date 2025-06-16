@@ -101,7 +101,7 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
   // Helper function to compress images
   const compressImage = useCallback(
     async (dataUrl: string, maxSizeKB: number = 200): Promise<string> => {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
@@ -139,7 +139,7 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
             quality > 0.1
           ) {
             // 1.37 factor for base64 overhead
-            quality -= 0.1;
+            quality -= 0.05;
             compressedData = canvas.toDataURL("image/jpeg", quality);
           }
 
@@ -147,6 +147,9 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
             `Image compressed: ${dataUrl.length} -> ${compressedData.length} bytes (quality: ${quality})`
           );
           resolve(compressedData);
+        };
+        img.onerror = (error) => {
+          reject(new Error(`Failed to load image: ${error}`));
         };
         img.src = dataUrl;
       });
