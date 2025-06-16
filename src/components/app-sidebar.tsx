@@ -157,6 +157,22 @@ export function AppSidebar() {
     <Sidebar className="border-r">
       <SidebarHeader className="border-b">
         <div className="p-3 sm:p-4">
+          <div className=" border rounded-lg p-1.5 sm:p-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hover:bg-transparent"
+            >
+              <Link href="/protected" className="flex items-center space-x-2">
+                <span className="font-bold text-lg bg-primary bg-clip-text text-transparent">
+                  Zermind
+                </span>
+              </Link>
+            </Button>
+          </div>
+        </div>
+        <div className="p-3 sm:p-4">
           <Button
             onClick={createNewChat}
             className="w-full justify-start gap-2 h-9 sm:h-10"
