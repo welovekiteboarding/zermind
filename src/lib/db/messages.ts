@@ -50,36 +50,27 @@ export async function updateMessagePositionSecure(
   yPosition: number,
   userId: string
 ): Promise<Message> {
-  // First, verify that the message belongs to a chat owned by the user
-  const message = await prisma.message.findUnique({
-    where: { id: messageId },
-    include: {
-      chat: {
-        select: {
-          userId: true,
+  try {
+    // Atomic operation: update only if message belongs to user's chat
+    return await prisma.message.update({
+      where: {
+        id: messageId,
+        chat: {
+          userId: userId,
         },
       },
-    },
-  });
-
-  if (!message) {
-    throw new Error("Message not found");
+      data: {
+        xPosition,
+        yPosition,
+      },
+    });
+  } catch (error) {
+    // Handle Prisma RecordNotFound error
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw new Error("Message not found or unauthorized access");
+    }
+    throw error;
   }
-
-  if (message.chat.userId !== userId) {
-    throw new Error(
-      "Unauthorized: Message does not belong to the current user"
-    );
-  }
-
-  // If ownership check passes, perform the update
-  return prisma.message.update({
-    where: { id: messageId },
-    data: {
-      xPosition,
-      yPosition,
-    },
-  });
 }
 
 // Batch update message positions (for layout optimizations)
@@ -112,49 +103,33 @@ export async function batchUpdateMessagePositionsSecure(
   }>,
   userId: string
 ): Promise<void> {
-  // First, verify that all messages belong to chats owned by the user
-  const messageIds = updates.map((update) => update.id);
-
-  const messages = await prisma.message.findMany({
-    where: {
-      id: { in: messageIds },
-    },
-    include: {
-      chat: {
-        select: {
-          userId: true,
+  // Use a transaction to ensure atomicity of all updates
+  await prisma.$transaction(async (tx) => {
+    const updatePromises = updates.map((update) =>
+      tx.message.update({
+        where: {
+          id: update.id,
+          chat: {
+            userId: userId,
+          },
         },
-      },
-    },
-  });
-
-  // Check if all messages were found and belong to the user
-  if (messages.length !== messageIds.length) {
-    throw new Error("Some messages were not found");
-  }
-
-  const unauthorizedMessages = messages.filter(
-    (message) => message.chat.userId !== userId
-  );
-
-  if (unauthorizedMessages.length > 0) {
-    throw new Error(
-      "Unauthorized: Some messages do not belong to the current user"
+        data: {
+          xPosition: update.xPosition,
+          yPosition: update.yPosition,
+        },
+      })
     );
-  }
 
-  // If all checks pass, perform the updates
-  const updatePromises = updates.map((update) =>
-    prisma.message.update({
-      where: { id: update.id },
-      data: {
-        xPosition: update.xPosition,
-        yPosition: update.yPosition,
-      },
-    })
-  );
-
-  await Promise.all(updatePromises);
+    try {
+      await Promise.all(updatePromises);
+    } catch (error) {
+      // Handle case where some messages don't exist or don't belong to user
+      if (error instanceof Error && "code" in error && error.code === "P2025") {
+        throw new Error("Some messages not found or unauthorized access");
+      }
+      throw error;
+    }
+  });
 }
 
 // Get conversation tree structure for mind map visualization
