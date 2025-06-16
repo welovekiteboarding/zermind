@@ -45,7 +45,6 @@ interface Message {
     mimeType: string;
     size: number;
     url: string;
-    filePath?: string;
     type: "image" | "document";
   }>;
 }
