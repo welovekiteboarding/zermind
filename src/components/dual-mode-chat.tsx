@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
 import { ResumeMessageInput } from "@/components/resume-message-input";
@@ -9,6 +10,7 @@ import { CreateBranchInput } from "@/components/create-branch-input";
 import { CreateMultiModelBranch } from "@/components/create-multi-model-branch";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { useAuthUser } from "@/hooks/use-auth";
+import { useChatWithMessages } from "@/hooks/use-chats-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageSquare, X } from "lucide-react";
@@ -18,6 +20,8 @@ import {
   CollaborationPresence,
 } from "@/components/mind-map/realtime-cursors";
 import { useRealtimeCollaboration } from "@/hooks/use-realtime-collaboration";
+import { chatKeys } from "@/hooks/use-chats-query";
+import { conversationContextKeys } from "@/hooks/use-conversation-context";
 
 interface Message {
   id: string;
@@ -47,7 +51,7 @@ interface Message {
 
 interface DualModeChatProps {
   chatId: string;
-  initialMessages: Message[];
+  initialMessages: Message[]; // Keep for SSR hydration, but use live data after mount
   userId: string;
   chatTitle?: string;
   enableCollaboration?: boolean; // Optional prop to enable collaboration
@@ -80,6 +84,7 @@ export function DualModeChat({
 }: DualModeChatProps) {
   const { mode } = useChatModeStore();
   const { user } = useAuthUser();
+  const queryClient = useQueryClient();
   const [resumeFromNodeId, setResumeFromNodeId] = useState<string | null>(null);
   const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
     string | null
@@ -87,6 +92,13 @@ export function DualModeChat({
   const [createMultiModelFromNodeId, setCreateMultiModelFromNodeId] = useState<
     string | null
   >(null);
+
+  // Use live data from React Query instead of static initialMessages
+  const { data: liveData } = useChatWithMessages(chatId, userId);
+
+  // Use live data if available, fallback to initial messages during loading
+  const messages = liveData?.messages || initialMessages;
+  const currentChatTitle = liveData?.title || chatTitle;
 
   // Get display name from user data with fallback
   const getUserDisplayName = () => {
@@ -151,22 +163,62 @@ export function DualModeChat({
 
   // Handle successful message sent in resume mode
   const handleResumeMessageSent = useCallback(() => {
-    // Refresh the mind map to show new messages
-    // This will be handled by the query invalidation in the useSaveMessage hook
-    console.log("Resume message sent successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log("Resume message sent successfully - queries invalidated");
+  }, [queryClient, chatId]);
 
   // Handle successful branch creation
   const handleBranchCreated = useCallback(() => {
-    // Refresh the mind map to show new branch
-    console.log("Branch created successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log("Branch created successfully - queries invalidated");
+  }, [queryClient, chatId]);
 
   // Handle successful multi-model branch creation
   const handleMultiModelBranchCreated = useCallback(() => {
-    // Refresh the mind map to show new multi-model branches
-    console.log("Multi-model branch created successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log(
+      "Multi-model branch created successfully - queries invalidated"
+    );
+  }, [queryClient, chatId]);
 
   // Clear all active actions
   const clearAllActions = useCallback(() => {
@@ -203,11 +255,17 @@ export function DualModeChat({
     clearAllActions,
   ]);
 
-  // Convert traditional messages to mind map format
-  const mindMapMessages = initialMessages.map((msg, index) => ({
+  // Convert messages to mind map format with proper typing
+  const mindMapMessages = messages.map((msg, index) => ({
     ...msg,
     xPosition: msg.xPosition || (index % 3) * 400,
     yPosition: msg.yPosition || Math.floor(index / 3) * 250,
+    // Convert all nullish fields to undefined for proper typing
+    model: msg.model || undefined,
+    parentId: msg.parentId || undefined,
+    branchName: msg.branchName || undefined,
+    lastEditedBy: msg.lastEditedBy || undefined,
+    editedAt: msg.editedAt || undefined,
   }));
 
   // Check if any action is active
@@ -232,7 +290,7 @@ export function DualModeChat({
               <Brain className="h-5 w-5 text-purple-500" />
               <div>
                 <h2 className="font-semibold">
-                  {chatTitle || "Mind Map Chat"}
+                  {currentChatTitle || "Mind Map Chat"}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Interactive conversation visualization
@@ -256,7 +314,7 @@ export function DualModeChat({
               >
                 <CollaborationButton
                   chatId={chatId}
-                  chatTitle={chatTitle}
+                  chatTitle={currentChatTitle}
                   currentUserRole="owner"
                   isRealtimeConnected={isRealtimeConnected}
                 />
@@ -394,7 +452,7 @@ export function DualModeChat({
           <div className="flex items-center gap-3">
             <MessageSquare className="h-5 w-5 text-blue-500" />
             <div>
-              <h2 className="font-semibold">{chatTitle || "Chat"}</h2>
+              <h2 className="font-semibold">{currentChatTitle || "Chat"}</h2>
               <p className="text-xs text-muted-foreground">
                 Traditional linear conversation
               </p>
@@ -417,7 +475,7 @@ export function DualModeChat({
             >
               <CollaborationButton
                 chatId={chatId}
-                chatTitle={chatTitle}
+                chatTitle={currentChatTitle}
                 currentUserRole="owner"
                 isRealtimeConnected={isRealtimeConnected}
               />
@@ -430,7 +488,7 @@ export function DualModeChat({
       <div className="flex-1 overflow-hidden">
         <ChatConversation
           chatId={chatId}
-          initialMessages={initialMessages.map((msg) => ({
+          initialMessages={messages.map((msg) => ({
             ...msg,
             role: msg.role as "user" | "assistant",
             createdAt: new Date(msg.createdAt),
@@ -441,9 +499,14 @@ export function DualModeChat({
             isCollapsed: msg.isCollapsed || false,
             isLocked: msg.isLocked || false,
             editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined,
+            // Convert nullish model to undefined for consistency
+            model: msg.model || undefined,
+            parentId: msg.parentId || undefined,
+            branchName: msg.branchName || undefined,
+            lastEditedBy: msg.lastEditedBy || undefined,
           }))}
           userId={userId}
-          chatTitle={chatTitle}
+          chatTitle={currentChatTitle}
         />
       </div>
     </div>
