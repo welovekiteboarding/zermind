@@ -94,7 +94,7 @@ export function DualModeChat({
   >(null);
 
   // Use custom hook for node position management
-  const { handleNodePositionChange } = useNodePositions();
+  const { handleNodePositionChange, savePendingPositions } = useNodePositions();
 
   // Use live data from React Query instead of static initialMessages
   const { data: liveData } = useChatWithMessages(chatId, userId);
@@ -257,6 +257,14 @@ export function DualModeChat({
     createMultiModelFromNodeId,
     clearAllActions,
   ]);
+
+  // Save pending node positions on component unmount or navigation
+  useEffect(() => {
+    return () => {
+      // Save any pending position changes when component unmounts
+      savePendingPositions();
+    };
+  }, [savePendingPositions]);
 
   // Convert messages to mind map format with proper typing
   const mindMapMessages = messages.map((msg, index) => ({
