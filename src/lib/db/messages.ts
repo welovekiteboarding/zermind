@@ -43,6 +43,45 @@ export async function updateMessagePosition(
   });
 }
 
+// Secure update message position with ownership verification
+export async function updateMessagePositionSecure(
+  messageId: string,
+  xPosition: number,
+  yPosition: number,
+  userId: string
+): Promise<Message> {
+  // First, verify that the message belongs to a chat owned by the user
+  const message = await prisma.message.findUnique({
+    where: { id: messageId },
+    include: {
+      chat: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  if (!message) {
+    throw new Error("Message not found");
+  }
+
+  if (message.chat.userId !== userId) {
+    throw new Error(
+      "Unauthorized: Message does not belong to the current user"
+    );
+  }
+
+  // If ownership check passes, perform the update
+  return prisma.message.update({
+    where: { id: messageId },
+    data: {
+      xPosition,
+      yPosition,
+    },
+  });
+}
+
 // Batch update message positions (for layout optimizations)
 export async function batchUpdateMessagePositions(
   updates: Array<{
@@ -51,6 +90,60 @@ export async function batchUpdateMessagePositions(
     yPosition: number;
   }>
 ): Promise<void> {
+  const updatePromises = updates.map((update) =>
+    prisma.message.update({
+      where: { id: update.id },
+      data: {
+        xPosition: update.xPosition,
+        yPosition: update.yPosition,
+      },
+    })
+  );
+
+  await Promise.all(updatePromises);
+}
+
+// Secure batch update message positions with ownership verification
+export async function batchUpdateMessagePositionsSecure(
+  updates: Array<{
+    id: string;
+    xPosition: number;
+    yPosition: number;
+  }>,
+  userId: string
+): Promise<void> {
+  // First, verify that all messages belong to chats owned by the user
+  const messageIds = updates.map((update) => update.id);
+
+  const messages = await prisma.message.findMany({
+    where: {
+      id: { in: messageIds },
+    },
+    include: {
+      chat: {
+        select: {
+          userId: true,
+        },
+      },
+    },
+  });
+
+  // Check if all messages were found and belong to the user
+  if (messages.length !== messageIds.length) {
+    throw new Error("Some messages were not found");
+  }
+
+  const unauthorizedMessages = messages.filter(
+    (message) => message.chat.userId !== userId
+  );
+
+  if (unauthorizedMessages.length > 0) {
+    throw new Error(
+      "Unauthorized: Some messages do not belong to the current user"
+    );
+  }
+
+  // If all checks pass, perform the updates
   const updatePromises = updates.map((update) =>
     prisma.message.update({
       where: { id: update.id },
