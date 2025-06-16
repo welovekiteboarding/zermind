@@ -132,12 +132,14 @@ export function useChat({
         });
 
         // For the AI SDK, we need to send the message with attachments using experimental_attachments
+        // We extend the message with attachments for optimistic UI updates
         return append(
           {
             role: "user",
             content: content,
             createdAt: new Date(),
-          },
+            attachments: attachments,
+          } as Parameters<typeof append>[0] & { attachments: Attachment[] },
           {
             experimental_attachments: attachments.map((att) => ({
               name: att.name,
