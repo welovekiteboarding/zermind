@@ -208,7 +208,6 @@ Your support helps us:
 
 ## Documentation
 
-- [Enhanced PRD](docs/enhanced-prd.md) - Complete product vision and roadmap
 - [BYOK Implementation](docs/byok.md) - Security details for API key management
 - [Environment Setup](docs/env-setup.md) - Complete configuration guide
 - [OpenRouter Integration](docs/openrouter.md) - Multi-model API setup
