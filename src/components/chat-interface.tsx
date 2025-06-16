@@ -266,7 +266,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
             <CardHeader className="text-center pb-2 sm:pb-3">
               <Badge variant="secondary" className="text-xs sm:text-sm">
-                Soon
+                Beta
               </Badge>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
@@ -286,7 +286,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
             <CardHeader className="text-center pb-2 sm:pb-3">
               <Badge variant="secondary" className="text-xs sm:text-sm">
-                Soon
+                Beta
               </Badge>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
