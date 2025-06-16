@@ -11,7 +11,6 @@ DIRECT_URL="postgresql://..."
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 ```
 
 ### API Key Encryption (Required for BYOK)
@@ -61,6 +60,12 @@ API_KEY_ENCRYPTION_SECRET="$(openssl rand -base64 32)"
 
 # Fallback API Key (Required)
 OPENROUTER_API_KEY="sk-or-v1-your-openrouter-key"
+
+# NODE ENV
+NODE_ENV=development
+
+# SEO
+NEXT_PUBLIC_SITE_URL=your-production-url
 ```
 
 ## Security Notes
