@@ -76,8 +76,13 @@ export async function POST(request: NextRequest) {
         `Beacon: User ${action.userName} (${action.userId}) left chat ${chatId}`
       );
 
-      // Clean up the channel
-      await supabase.removeChannel(channel);
+      // Clean up the channel safely
+      try {
+        await supabase.removeChannel(channel);
+      } catch (cleanupError) {
+        console.warn("Failed to clean up channel:", cleanupError);
+        // Don't throw error for cleanup issues
+      }
 
       return NextResponse.json({ success: true });
     } catch (broadcastError) {
@@ -86,13 +91,15 @@ export async function POST(request: NextRequest) {
         broadcastError
       );
 
-      // Clean up the channel on error
-      await supabase.removeChannel(channel);
+      // Clean up the channel on error safely
+      try {
+        await supabase.removeChannel(channel);
+      } catch (cleanupError) {
+        console.warn("Failed to clean up channel on error:", cleanupError);
+      }
 
-      return NextResponse.json(
-        { error: "Failed to broadcast user leave" },
-        { status: 500 }
-      );
+      // Return success anyway - beacon failures shouldn't break the flow
+      return NextResponse.json({ success: true });
     }
   } catch (error) {
     console.error("Beacon endpoint error:", error);
