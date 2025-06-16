@@ -43,6 +43,36 @@ export async function updateMessagePosition(
   });
 }
 
+// Secure update message position with ownership verification
+export async function updateMessagePositionSecure(
+  messageId: string,
+  xPosition: number,
+  yPosition: number,
+  userId: string
+): Promise<Message> {
+  try {
+    // Atomic operation: update only if message belongs to user's chat
+    return await prisma.message.update({
+      where: {
+        id: messageId,
+        chat: {
+          userId: userId,
+        },
+      },
+      data: {
+        xPosition,
+        yPosition,
+      },
+    });
+  } catch (error) {
+    // Handle Prisma RecordNotFound error
+    if (error instanceof Error && "code" in error && error.code === "P2025") {
+      throw new Error("Message not found or unauthorized access");
+    }
+    throw error;
+  }
+}
+
 // Batch update message positions (for layout optimizations)
 export async function batchUpdateMessagePositions(
   updates: Array<{
@@ -51,17 +81,58 @@ export async function batchUpdateMessagePositions(
     yPosition: number;
   }>
 ): Promise<void> {
-  const updatePromises = updates.map((update) =>
-    prisma.message.update({
-      where: { id: update.id },
-      data: {
-        xPosition: update.xPosition,
-        yPosition: update.yPosition,
-      },
-    })
-  );
+  // Use a transaction to ensure atomicity of all updates
+  await prisma.$transaction(async (tx) => {
+    const updatePromises = updates.map((update) =>
+      tx.message.update({
+        where: { id: update.id },
+        data: {
+          xPosition: update.xPosition,
+          yPosition: update.yPosition,
+        },
+      })
+    );
 
-  await Promise.all(updatePromises);
+    await Promise.all(updatePromises);
+  });
+}
+
+// Secure batch update message positions with ownership verification
+export async function batchUpdateMessagePositionsSecure(
+  updates: Array<{
+    id: string;
+    xPosition: number;
+    yPosition: number;
+  }>,
+  userId: string
+): Promise<void> {
+  // Use a transaction to ensure atomicity of all updates
+  await prisma.$transaction(async (tx) => {
+    const updatePromises = updates.map((update) =>
+      tx.message.update({
+        where: {
+          id: update.id,
+          chat: {
+            userId: userId,
+          },
+        },
+        data: {
+          xPosition: update.xPosition,
+          yPosition: update.yPosition,
+        },
+      })
+    );
+
+    try {
+      await Promise.all(updatePromises);
+    } catch (error) {
+      // Handle case where some messages don't exist or don't belong to user
+      if (error instanceof Error && "code" in error && error.code === "P2025") {
+        throw new Error("Some messages not found or unauthorized access");
+      }
+      throw error;
+    }
+  });
 }
 
 // Get conversation tree structure for mind map visualization

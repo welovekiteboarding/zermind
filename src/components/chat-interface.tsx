@@ -266,7 +266,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
             <CardHeader className="text-center pb-2 sm:pb-3">
               <Badge variant="secondary" className="text-xs sm:text-sm">
-                Soon
+                Beta
               </Badge>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
@@ -286,7 +286,7 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
           <Card className="border-2 border-primary/10 shadow-xl backdrop-blur-sm sm:col-span-3">
             <CardHeader className="text-center pb-2 sm:pb-3">
               <Badge variant="secondary" className="text-xs sm:text-sm">
-                Soon
+                Beta
               </Badge>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 text-center space-y-2 sm:space-y-3 pt-0">
@@ -437,14 +437,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       {/* Footer */}
       <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-2 sm:space-y-3">
         <p>
-          Open source • Privacy-focused • Built for{" "}
+          Open source • Privacy-focused • Built by{" "}
           <Link
-            href="https://cloneathon.t3.chat"
+            href="https://x.com/NickelanddimeO"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
-            Cloneathon 2025
+            NickelanddimeO
           </Link>
         </p>
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">

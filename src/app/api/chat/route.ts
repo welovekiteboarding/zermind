@@ -10,12 +10,23 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveApiKey } from "@/lib/db/api-keys";
 import { type Provider } from "@/lib/schemas/api-keys";
 
-// Request schema
+// Attachment schema for AI SDK experimental_attachments
+const AISDKAttachmentSchema = z.object({
+  name: z.string().optional(),
+  contentType: z.string().optional(),
+  url: z.string(),
+});
+
+// Request schema with experimental_attachments only
 const ChatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant", "system"]),
       content: z.string(),
+      experimental_attachments: z
+        .array(AISDKAttachmentSchema)
+        .optional()
+        .default([]),
     })
   ),
   model: z.string().optional().default("openai/gpt-4o-mini"),
@@ -149,17 +160,31 @@ export async function POST(req: NextRequest) {
       usingUserKey,
     } = await createAIProvider(model, userId);
 
+    console.log("Provider setup:", {
+      originalModel: model,
+      providerModel,
+      usingUserKey,
+      provider: usingUserKey ? getProviderFromModel(model) : "openrouter",
+    });
+
     // Log model usage (no user data is logged, only model and user ID)
     await logModelUsage(model, userId);
 
     // Stream response using Vercel AI SDK
+    // The AI SDK will automatically handle experimental_attachments from the frontend
     const result = streamText({
       model: provider.chat(providerModel),
-      messages,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        ...(msg.experimental_attachments && {
+          experimental_attachments: msg.experimental_attachments,
+        }),
+      })),
       maxTokens,
       temperature,
-      onError: (error) => {
-        console.error("Streaming error:", error);
+      onError: (event) => {
+        console.error("Streaming error:", event.error);
       },
     });
 

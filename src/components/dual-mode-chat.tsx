@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
 import { ResumeMessageInput } from "@/components/resume-message-input";
@@ -9,15 +10,19 @@ import { CreateBranchInput } from "@/components/create-branch-input";
 import { CreateMultiModelBranch } from "@/components/create-multi-model-branch";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { useAuthUser } from "@/hooks/use-auth";
+import { useChatWithMessages } from "@/hooks/use-chats-query";
+import { useNodePositions } from "@/hooks/use-node-positions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageSquare, ArrowLeft } from "lucide-react";
+import { Brain, MessageSquare, X } from "lucide-react";
 import { CollaborationButton } from "@/components/collaboration/collaboration-button";
 import {
   RealtimeCursors,
   CollaborationPresence,
 } from "@/components/mind-map/realtime-cursors";
 import { useRealtimeCollaboration } from "@/hooks/use-realtime-collaboration";
+import { chatKeys } from "@/hooks/use-chats-query";
+import { conversationContextKeys } from "@/hooks/use-conversation-context";
 
 interface Message {
   id: string;
@@ -40,16 +45,16 @@ interface Message {
     mimeType: string;
     size: number;
     url: string;
-    filePath?: string;
     type: "image" | "document";
   }>;
 }
 
 interface DualModeChatProps {
   chatId: string;
-  initialMessages: Message[];
+  initialMessages: Message[]; // Keep for SSR hydration, but use live data after mount
   userId: string;
   chatTitle?: string;
+  enableCollaboration?: boolean; // Optional prop to enable collaboration
 }
 
 // Error handler for collaboration features
@@ -75,9 +80,11 @@ export function DualModeChat({
   initialMessages,
   userId,
   chatTitle,
+  enableCollaboration = false, // Default to false
 }: DualModeChatProps) {
   const { mode } = useChatModeStore();
   const { user } = useAuthUser();
+  const queryClient = useQueryClient();
   const [resumeFromNodeId, setResumeFromNodeId] = useState<string | null>(null);
   const [createBranchFromNodeId, setCreateBranchFromNodeId] = useState<
     string | null
@@ -85,6 +92,16 @@ export function DualModeChat({
   const [createMultiModelFromNodeId, setCreateMultiModelFromNodeId] = useState<
     string | null
   >(null);
+
+  // Use custom hook for node position management
+  const { handleNodePositionChange, savePendingPositions } = useNodePositions();
+
+  // Use live data from React Query instead of static initialMessages
+  const { data: liveData } = useChatWithMessages(chatId, userId);
+
+  // Use live data if available, fallback to initial messages during loading
+  const messages = liveData?.messages || initialMessages;
+  const currentChatTitle = liveData?.title || chatTitle;
 
   // Get display name from user data with fallback
   const getUserDisplayName = () => {
@@ -101,17 +118,21 @@ export function DualModeChat({
     return "User"; // Final fallback
   };
 
-  // Real-time collaboration hook - ALWAYS called at top level (Rules of Hooks)
+  // Real-time collaboration hook - always called but conditionally active
   const collaborationState = useRealtimeCollaboration({
-    chatId,
+    chatId: enableCollaboration ? chatId : "", // Empty chatId disables the hook
     userId,
     userName: getUserDisplayName(),
     onAction: (action) => {
-      console.log("Received collaborative action:", action);
-      // Handle collaborative actions here
+      if (enableCollaboration) {
+        console.log("Received collaborative action:", action);
+        // Handle collaborative actions here
+      }
     },
     onPresenceChange: (users) => {
-      console.log("Collaboration presence changed:", users);
+      if (enableCollaboration) {
+        console.log("Collaboration presence changed:", users);
+      }
     },
   });
 
@@ -145,22 +166,62 @@ export function DualModeChat({
 
   // Handle successful message sent in resume mode
   const handleResumeMessageSent = useCallback(() => {
-    // Refresh the mind map to show new messages
-    // This will be handled by the query invalidation in the useSaveMessage hook
-    console.log("Resume message sent successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log("Resume message sent successfully - queries invalidated");
+  }, [queryClient, chatId]);
 
   // Handle successful branch creation
   const handleBranchCreated = useCallback(() => {
-    // Refresh the mind map to show new branch
-    console.log("Branch created successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log("Branch created successfully - queries invalidated");
+  }, [queryClient, chatId]);
 
   // Handle successful multi-model branch creation
   const handleMultiModelBranchCreated = useCallback(() => {
-    // Refresh the mind map to show new multi-model branches
-    console.log("Multi-model branch created successfully");
-  }, []);
+    // Invalidate all relevant queries to refresh the mind map
+    queryClient.invalidateQueries({
+      queryKey: chatKeys.details(),
+      predicate: (query) => query.queryKey.includes(chatId),
+    });
+
+    // Invalidate conversation context queries
+    queryClient.invalidateQueries({
+      queryKey: conversationContextKeys.all,
+    });
+
+    // Update chat list to show latest message
+    queryClient.invalidateQueries({ queryKey: chatKeys.lists() });
+
+    console.log(
+      "Multi-model branch created successfully - queries invalidated"
+    );
+  }, [queryClient, chatId]);
 
   // Clear all active actions
   const clearAllActions = useCallback(() => {
@@ -169,16 +230,66 @@ export function DualModeChat({
     setCreateMultiModelFromNodeId(null);
   }, []);
 
-  // Convert traditional messages to mind map format
-  const mindMapMessages = initialMessages.map((msg, index) => ({
+  // Add keyboard event handler for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        const hasActiveAction =
+          resumeFromNodeId ||
+          createBranchFromNodeId ||
+          createMultiModelFromNodeId;
+        if (hasActiveAction) {
+          clearAllActions();
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    resumeFromNodeId,
+    createBranchFromNodeId,
+    createMultiModelFromNodeId,
+    clearAllActions,
+  ]);
+
+  // Save pending node positions on component unmount or navigation
+  useEffect(() => {
+    return () => {
+      // Save any pending position changes when component unmounts
+      savePendingPositions();
+    };
+  }, [savePendingPositions]);
+
+  // Convert messages to mind map format with proper typing
+  const mindMapMessages = messages.map((msg, index) => ({
     ...msg,
     xPosition: msg.xPosition || (index % 3) * 400,
     yPosition: msg.yPosition || Math.floor(index / 3) * 250,
+    // Convert all nullish fields to undefined for proper typing
+    model: msg.model || undefined,
+    parentId: msg.parentId || undefined,
+    branchName: msg.branchName || undefined,
+    lastEditedBy: msg.lastEditedBy || undefined,
+    editedAt: msg.editedAt || undefined,
   }));
 
   // Check if any action is active
   const hasActiveAction =
     resumeFromNodeId || createBranchFromNodeId || createMultiModelFromNodeId;
+
+  // Get active action name for better UX
+  const getActiveActionName = () => {
+    if (resumeFromNodeId) return "Resume Conversation";
+    if (createBranchFromNodeId) return "Create Branch";
+    if (createMultiModelFromNodeId) return "Create Multi-Model Branch";
+    return "";
+  };
 
   if (mode === "mind") {
     return (
@@ -190,7 +301,7 @@ export function DualModeChat({
               <Brain className="h-5 w-5 text-purple-500" />
               <div>
                 <h2 className="font-semibold">
-                  {chatTitle || "Mind Map Chat"}
+                  {currentChatTitle || "Mind Map Chat"}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Interactive conversation visualization
@@ -214,23 +325,25 @@ export function DualModeChat({
               >
                 <CollaborationButton
                   chatId={chatId}
-                  chatTitle={chatTitle}
+                  chatTitle={currentChatTitle}
                   currentUserRole="owner"
                   isRealtimeConnected={isRealtimeConnected}
                 />
               </ErrorBoundary>
 
-              {/* Clear Actions Button */}
+              {/* Enhanced Clear Actions Button */}
               {hasActiveAction && (
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="destructive"
                   onClick={clearAllActions}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white"
                 >
-                  <ArrowLeft className="h-3 w-3" />
-                  <span className="hidden sm:inline">Clear Action</span>
-                  <span className="sm:hidden">Clear</span>
+                  <X className="h-3 w-3" />
+                  <span className="hidden sm:inline">
+                    Close {getActiveActionName()}
+                  </span>
+                  <span className="sm:hidden">Close</span>
                 </Button>
               )}
             </div>
@@ -256,6 +369,7 @@ export function DualModeChat({
             onResumeConversation={handleResumeConversation}
             onCreateBranch={handleCreateBranch}
             onCreateMultiModelBranch={handleCreateMultiModelBranch}
+            onNodePositionChange={handleNodePositionChange}
           />
 
           {/* Real-time Cursors Overlay */}
@@ -271,32 +385,71 @@ export function DualModeChat({
 
         {/* Resume Conversation Panel */}
         {resumeFromNodeId && (
-          <ResumeMessageInput
-            chatId={chatId}
-            parentNodeId={resumeFromNodeId}
-            onClose={() => setResumeFromNodeId(null)}
-            onMessageSent={handleResumeMessageSent}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setResumeFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <ResumeMessageInput
+              chatId={chatId}
+              parentNodeId={resumeFromNodeId}
+              onClose={() => setResumeFromNodeId(null)}
+              onMessageSent={handleResumeMessageSent}
+            />
+          </div>
         )}
 
         {/* Create Branch Panel */}
         {createBranchFromNodeId && (
-          <CreateBranchInput
-            chatId={chatId}
-            parentNodeId={createBranchFromNodeId}
-            onClose={() => setCreateBranchFromNodeId(null)}
-            onBranchCreated={handleBranchCreated}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreateBranchFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <CreateBranchInput
+              chatId={chatId}
+              parentNodeId={createBranchFromNodeId}
+              onClose={() => setCreateBranchFromNodeId(null)}
+              onBranchCreated={handleBranchCreated}
+            />
+          </div>
         )}
 
         {/* Create Multi-Model Branch Panel */}
         {createMultiModelFromNodeId && (
-          <CreateMultiModelBranch
-            chatId={chatId}
-            parentNodeId={createMultiModelFromNodeId}
-            onClose={() => setCreateMultiModelFromNodeId(null)}
-            onBranchCreated={handleMultiModelBranchCreated}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreateMultiModelFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <CreateMultiModelBranch
+              chatId={chatId}
+              parentNodeId={createMultiModelFromNodeId}
+              onClose={() => setCreateMultiModelFromNodeId(null)}
+              onBranchCreated={handleMultiModelBranchCreated}
+            />
+          </div>
         )}
       </div>
     );
@@ -311,7 +464,7 @@ export function DualModeChat({
           <div className="flex items-center gap-3">
             <MessageSquare className="h-5 w-5 text-blue-500" />
             <div>
-              <h2 className="font-semibold">{chatTitle || "Chat"}</h2>
+              <h2 className="font-semibold">{currentChatTitle || "Chat"}</h2>
               <p className="text-xs text-muted-foreground">
                 Traditional linear conversation
               </p>
@@ -334,7 +487,7 @@ export function DualModeChat({
             >
               <CollaborationButton
                 chatId={chatId}
-                chatTitle={chatTitle}
+                chatTitle={currentChatTitle}
                 currentUserRole="owner"
                 isRealtimeConnected={isRealtimeConnected}
               />
@@ -347,7 +500,7 @@ export function DualModeChat({
       <div className="flex-1 overflow-hidden">
         <ChatConversation
           chatId={chatId}
-          initialMessages={initialMessages.map((msg) => ({
+          initialMessages={messages.map((msg) => ({
             ...msg,
             role: msg.role as "user" | "assistant",
             createdAt: new Date(msg.createdAt),
@@ -358,9 +511,14 @@ export function DualModeChat({
             isCollapsed: msg.isCollapsed || false,
             isLocked: msg.isLocked || false,
             editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined,
+            // Convert nullish model to undefined for consistency
+            model: msg.model || undefined,
+            parentId: msg.parentId || undefined,
+            branchName: msg.branchName || undefined,
+            lastEditedBy: msg.lastEditedBy || undefined,
           }))}
           userId={userId}
-          chatTitle={chatTitle}
+          chatTitle={currentChatTitle}
         />
       </div>
     </div>

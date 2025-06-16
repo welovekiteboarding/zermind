@@ -159,15 +159,15 @@ export function DemoSelection({ onUpgrade }: DemoSelectionProps) {
 
         {/* Footer */}
         <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-3 sm:space-y-4 max-w-4xl mx-auto px-2 pb-4 sm:pb-6">
-          <p className="leading-relaxed">
-            Open source • Privacy-focused • Built for{" "}
+          <p>
+            Open source • Privacy-focused • Built by{" "}
             <Link
-              href="https://cloneathon.t3.chat"
+              href="https://x.com/NickelanddimeO"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline touch-manipulation"
+              className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
             >
-              Cloneathon 2025
+              NickelanddimeO
             </Link>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">

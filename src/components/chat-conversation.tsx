@@ -42,6 +42,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { type Message, type Attachment } from "@/lib/schemas/chat";
 import { useChat } from "@/hooks/use-chat";
@@ -215,15 +221,18 @@ export function ChatConversation({
         // Save user message to database FIRST with current timestamp
         // This ensures proper chronological ordering
         try {
-          // Upload files first if any
-          let attachments: Attachment[] = [];
+          // Process files (either upload to storage or process directly based on privacy preference)
+          let processedAttachments: Attachment[] = [];
           if (fileAttachments.pendingFiles.length > 0) {
             try {
-              attachments = await fileAttachments.uploadFiles();
+              // For privacy, process files directly without storing in Supabase
+              // This converts files to base64 and includes them in the message content
+              processedAttachments =
+                await fileAttachments.processFilesDirectly();
             } catch (error) {
-              console.error("Failed to upload files:", error);
+              console.error("Failed to process files:", error);
               throw new Error(
-                "Failed to upload attachments. Please try again."
+                "Failed to process attachments. Please try again."
               );
             }
           }
@@ -234,7 +243,7 @@ export function ChatConversation({
               role: "user",
               content: userMessage,
               model: null, // User messages don't have a model
-              attachments,
+              attachments: processedAttachments,
               xPosition: 0,
               yPosition: 0,
               nodeType: "conversation",
@@ -242,20 +251,30 @@ export function ChatConversation({
               isLocked: false,
             },
           });
+
+          // Reset form and send message to AI with attachments
+          messageForm.reset();
+          try {
+            // Send message with attachments to AI
+            await sendMessage(userMessage, processedAttachments);
+            // Files are already cleared by the processFilesDirectly function
+          } catch (error) {
+            console.error("Failed to send message to AI:", error);
+            throw new Error("Failed to get AI response. Please try again.");
+          }
         } catch (error) {
           console.error("Failed to save user message:", error);
           throw new Error("Failed to save your message. Please try again.");
         }
-      }
-
-      // Reset form and send message to AI
-      messageForm.reset();
-      try {
-        await sendMessage(userMessage);
-        // Files are already cleared by the uploadFiles function
-      } catch (error) {
-        console.error("Failed to send message to AI:", error);
-        throw new Error("Failed to get AI response. Please try again.");
+      } else {
+        // Demo mode - just send message to AI without database operations
+        messageForm.reset();
+        try {
+          await sendMessage(userMessage, []);
+        } catch (error) {
+          console.error("Failed to send message to AI:", error);
+          throw new Error("Failed to get AI response. Please try again.");
+        }
       }
 
       // Update chat title if this is the first user message (skip in demo mode)
@@ -303,10 +322,26 @@ export function ChatConversation({
     <div
       ref={chatContainerRef}
       className="flex flex-col h-full relative"
-      onDragEnter={fileAttachments.handleDragEnter}
-      onDragLeave={fileAttachments.handleDragLeave}
-      onDragOver={fileAttachments.handleDragOver}
-      onDrop={fileAttachments.handleDrop}
+      onDragEnter={
+        fileAttachments.supportsAttachments
+          ? fileAttachments.handleDragEnter
+          : undefined
+      }
+      onDragLeave={
+        fileAttachments.supportsAttachments
+          ? fileAttachments.handleDragLeave
+          : undefined
+      }
+      onDragOver={
+        fileAttachments.supportsAttachments
+          ? fileAttachments.handleDragOver
+          : undefined
+      }
+      onDrop={
+        fileAttachments.supportsAttachments
+          ? fileAttachments.handleDrop
+          : undefined
+      }
     >
       {/* Hidden file input */}
       <input
@@ -508,59 +543,85 @@ export function ChatConversation({
             />
 
             {/* Attachment Button */}
-            {fileAttachments.supportsAttachments && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    disabled={isLoading}
-                    className="w-full sm:w-auto h-9 sm:h-10"
-                  >
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Attach</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel className="text-sm">
-                    Attach Files
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {fileAttachments.modelCapabilities.supportsImages && (
-                    <DropdownMenuItem
-                      onClick={() => handleFileSelect("image")}
-                      className="text-sm"
-                    >
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Upload Images
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        up to{" "}
-                        {Math.round(
-                          fileAttachments.modelCapabilities.maxImageSize! || 5
-                        )}
-                        MB
-                      </span>
-                    </DropdownMenuItem>
-                  )}
-                  {fileAttachments.modelCapabilities.supportsDocuments && (
-                    <DropdownMenuItem
-                      onClick={() => handleFileSelect("document")}
-                      className="text-sm"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Upload PDFs
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        up to{" "}
-                        {Math.round(
-                          fileAttachments.modelCapabilities.maxDocumentSize! ||
-                            5
-                        )}
-                        MB
-                      </span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    {fileAttachments.supportsAttachments ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            disabled={isLoading}
+                            className="w-full sm:w-auto h-9 sm:h-10"
+                          >
+                            <Paperclip className="h-4 w-4 mr-2" />
+                            <span className="text-sm">Attach</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-56">
+                          <DropdownMenuLabel className="text-sm">
+                            Attach Files
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          {fileAttachments.modelCapabilities.supportsImages && (
+                            <DropdownMenuItem
+                              onClick={() => handleFileSelect("image")}
+                              className="text-sm"
+                            >
+                              <ImageIcon className="h-4 w-4 mr-2" />
+                              Upload Images
+                              <span className="ml-auto text-xs text-muted-foreground">
+                                up to{" "}
+                                {Math.round(
+                                  fileAttachments.modelCapabilities
+                                    .maxImageSize! || 5
+                                )}
+                                MB
+                              </span>
+                            </DropdownMenuItem>
+                          )}
+                          {fileAttachments.modelCapabilities
+                            .supportsDocuments && (
+                            <DropdownMenuItem
+                              onClick={() => handleFileSelect("document")}
+                              className="text-sm"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Upload PDFs
+                              <span className="ml-auto text-xs text-muted-foreground">
+                                up to{" "}
+                                {Math.round(
+                                  fileAttachments.modelCapabilities
+                                    .maxDocumentSize! || 5
+                                )}
+                                MB
+                              </span>
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        disabled={true}
+                        className="w-full sm:w-auto h-9 sm:h-10 opacity-50 cursor-not-allowed"
+                      >
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Attach</span>
+                      </Button>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {fileAttachments.supportsAttachments
+                    ? "Upload files to enhance your conversation"
+                    : `${
+                        selectedModel.split("/").pop() || selectedModel
+                      } does not support file attachments`}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {/* Pending Files */}
@@ -669,6 +730,11 @@ export function ChatConversation({
                   anywhere to attach
                 </span>
               )}
+            {!fileAttachments.supportsAttachments && (
+              <span className="block mt-1 text-muted-foreground/60">
+                ℹ️ Current model does not support file attachments
+              </span>
+            )}
           </p>
         </div>
       )}

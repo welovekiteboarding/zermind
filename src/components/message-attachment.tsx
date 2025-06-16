@@ -15,8 +15,7 @@ import {
 import { formatBytes } from "@/components/dropzone";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
-import { useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface MessageAttachmentProps {
   attachments: Attachment[];
@@ -31,77 +30,98 @@ export function MessageAttachment({
 }: MessageAttachmentProps) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [refreshedUrls, setRefreshedUrls] = useState<Record<string, string>>(
-    {}
-  );
-  // Store pending promises to prevent duplicate requests
-  const pendingRefreshes = useRef<Record<string, Promise<string>>>({});
+  const blobUrlsRef = useRef<Map<string, string>>(new Map());
 
-  // Create Supabase client once and reuse it
-  const supabaseRef = useRef(createClient());
+  // Cleanup blob URLs when component unmounts or attachments change
+  useEffect(() => {
+    const currentBlobUrls = blobUrlsRef.current;
+    return () => {
+      currentBlobUrls.forEach((blobUrl) => {
+        URL.revokeObjectURL(blobUrl);
+      });
+    };
+  }, []);
 
+  // Clean up blob URLs when attachments change
+  useEffect(() => {
+    const currentAttachmentIds = new Set(attachments.map((att) => att.id));
+    const staleUrls: string[] = [];
+
+    blobUrlsRef.current.forEach((blobUrl, attachmentId) => {
+      if (!currentAttachmentIds.has(attachmentId)) {
+        URL.revokeObjectURL(blobUrl);
+        staleUrls.push(attachmentId);
+      }
+    });
+
+    staleUrls.forEach((id) => {
+      blobUrlsRef.current.delete(id);
+    });
+  }, [attachments]);
+
+  const handleImageError = (attachmentId: string) => {
+    setImageErrors((prev) => new Set(prev).add(attachmentId));
+  };
+
+  const createBlobUrl = useCallback((attachment: Attachment): string => {
+    try {
+      // Check if we already have a blob URL for this attachment
+      const existingBlobUrl = blobUrlsRef.current.get(attachment.id);
+      if (existingBlobUrl) {
+        return existingBlobUrl;
+      }
+
+      // Convert data URL to blob
+      const [header, data] = attachment.url.split(",");
+      const mimeType = header.match(/:(.*?);/)?.[1] || attachment.mimeType;
+      const byteCharacters = atob(data);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Store the blob URL for cleanup
+      blobUrlsRef.current.set(attachment.id, blobUrl);
+
+      return blobUrl;
+    } catch (error) {
+      console.error(
+        "Failed to create blob URL for attachment:",
+        attachment.id,
+        error
+      );
+      return attachment.url; // Fallback to original data URL
+    }
+  }, []);
+
+  const getAttachmentUrl = (attachment: Attachment): string => {
+    // Define size threshold for converting to blob URL (1MB in base64 ≈ 1.33MB in bytes)
+    const LARGE_ATTACHMENT_THRESHOLD = 1024 * 1024; // 1MB in base64 characters
+
+    try {
+      // For large attachments, use blob URLs to avoid browser performance issues
+      // Data URLs can cause problems with window.open() and Next.js Image components
+      if (attachment.url.length > LARGE_ATTACHMENT_THRESHOLD) {
+        return createBlobUrl(attachment);
+      }
+
+      // For smaller attachments, use the original data URL
+      return attachment.url;
+    } catch (error) {
+      console.error("Error processing attachment URL:", error);
+      return attachment.url; // Fallback to original data URL
+    }
+  };
+
+  // Early return after all hooks are defined
   if (!attachments || attachments.length === 0) {
     return null;
   }
-
-  // Function to refresh signed URL when it expires
-  const refreshSignedUrl = async (attachment: Attachment): Promise<string> => {
-    if (!attachment.filePath) {
-      console.warn("No filePath available for attachment:", attachment.name);
-      return attachment.url;
-    }
-
-    // Check if there's already a pending request for this filePath
-    if (attachment.filePath in pendingRefreshes.current) {
-      console.log("Reusing pending refresh request for:", attachment.filePath);
-      return pendingRefreshes.current[attachment.filePath];
-    }
-
-    // Create a new promise for this refresh request
-    const refreshPromise = (async () => {
-      try {
-        const { data, error } = await supabaseRef.current.storage
-          .from("chat-attachments")
-          .createSignedUrl(attachment.filePath!, 3600); // 1 hour expiry
-
-        if (error) {
-          console.error("Error refreshing signed URL:", error);
-          return attachment.url;
-        }
-
-        setRefreshedUrls((prev) => ({
-          ...prev,
-          [attachment.id]: data.signedUrl,
-        }));
-        return data.signedUrl;
-      } catch (error) {
-        console.error("Failed to refresh signed URL:", error);
-        return attachment.url;
-      } finally {
-        // Clean up the pending promise when done
-        delete pendingRefreshes.current[attachment.filePath!];
-      }
-    })();
-
-    // Store the promise to prevent duplicate requests
-    pendingRefreshes.current[attachment.filePath!] = refreshPromise;
-
-    return refreshPromise;
-  };
-
-  const handleImageError = async (attachmentId: string) => {
-    setImageErrors((prev) => new Set(prev).add(attachmentId));
-
-    // Try to refresh the signed URL if it failed
-    const attachment = attachments.find((att) => att.id === attachmentId);
-    if (attachment && attachment.filePath) {
-      await refreshSignedUrl(attachment);
-    }
-  };
-
-  const getAttachmentUrl = (attachment: Attachment): string => {
-    return refreshedUrls[attachment.id] || attachment.url;
-  };
 
   const getFileTypeIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) {

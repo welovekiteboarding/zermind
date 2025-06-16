@@ -1,5 +1,5 @@
 import { useChat as useAIChat } from "@ai-sdk/react";
-import { type Message } from "@/lib/schemas/chat";
+import { type Message, type Attachment } from "@/lib/schemas/chat";
 
 interface UseChatOptions {
   chatId?: string;
@@ -116,12 +116,45 @@ export function useChat({
         createdAt: new Date(),
       });
     },
-    sendMessage: (content: string) => {
-      return append({
-        role: "user",
-        content,
-        createdAt: new Date(),
-      });
+    sendMessage: async (content: string, attachments: Attachment[] = []) => {
+      try {
+        console.log("Sending message with attachments:", {
+          content,
+          attachmentsCount: attachments.length,
+          attachments: attachments.map((att) => ({
+            name: att.name,
+            type: att.type,
+            mimeType: att.mimeType,
+            size: att.size,
+            urlType: att.url.startsWith("data:") ? "data URL" : "external URL",
+            urlLength: att.url.length,
+          })),
+        });
+
+        // For the AI SDK, we need to send the message with attachments using experimental_attachments
+        // We extend the message with attachments for optimistic UI updates
+        return append(
+          {
+            role: "user",
+            content: content,
+            createdAt: new Date(),
+            attachments: attachments,
+          } as Parameters<typeof append>[0] & { attachments: Attachment[] },
+          {
+            experimental_attachments: attachments.map((att) => ({
+              name: att.name,
+              contentType: att.mimeType,
+              url: att.url,
+            })),
+          }
+        );
+      } catch (error) {
+        console.error("Failed to process message with attachments:", error);
+        onError?.(
+          error instanceof Error ? error : new Error("Failed to send message")
+        );
+        throw error;
+      }
     },
   };
 }

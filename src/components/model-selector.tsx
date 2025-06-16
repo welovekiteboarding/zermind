@@ -10,8 +10,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Bot } from "lucide-react";
+import {
+  ChevronDown,
+  Bot,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  getModelCapabilities,
+  modelSupportsAttachments,
+} from "@/lib/utils/model-utils";
 
 // Popular OpenRouter models
 const MODELS = [
@@ -86,6 +96,46 @@ export function ModelSelector({
     }
   };
 
+  // Helper function to get attachment icons for a model
+  const getAttachmentIcons = (modelId: string) => {
+    const capabilities = getModelCapabilities(modelId);
+    const icons = [];
+
+    if (capabilities.supportsImages && capabilities.supportsDocuments) {
+      icons.push(
+        <div key="image" title="Supports images and documents">
+          <ImageIcon className="h-3 w-3 text-primary" />
+          <FileText className="h-3 w-3 text-primary" />
+        </div>
+      );
+    } else if (capabilities.supportsImages) {
+      icons.push(
+        <div key="image" title="Supports images">
+          <ImageIcon className="h-3 w-3 text-primary" />
+        </div>
+      );
+    } else if (capabilities.supportsDocuments) {
+      icons.push(
+        <div key="document" title="Supports documents">
+          <FileText className="h-3 w-3 text-primary" />
+        </div>
+      );
+    }
+
+    if (icons.length === 0) {
+      return null;
+    }
+
+    return (
+      <div
+        className="flex items-center space-x-1"
+        title="Supports file attachments"
+      >
+        {icons}
+      </div>
+    );
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -102,6 +152,9 @@ export function ModelSelector({
             <span className="truncate text-xs sm:text-sm">
               {currentModel.name}
             </span>
+            {modelSupportsAttachments(selectedModel) && (
+              <Paperclip className="h-3 w-3 text-primary flex-shrink-0" />
+            )}
           </div>
           <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
         </Button>
@@ -137,13 +190,16 @@ export function ModelSelector({
                   )}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className="font-medium text-sm sm:text-base truncate pr-2">
-                      {model.name}
-                    </span>
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <span className="font-medium text-sm sm:text-base truncate">
+                        {model.name}
+                      </span>
+                      {getAttachmentIcons(model.id)}
+                    </div>
                     <Badge
                       variant="secondary"
                       className={cn(
-                        "text-xs flex-shrink-0",
+                        "text-xs flex-shrink-0 ml-2",
                         getTierColor(model.tier)
                       )}
                     >
@@ -172,6 +228,16 @@ export function ModelSelector({
               OpenRouter
             </a>
           </p>
+          <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center space-x-1">
+              <ImageIcon className="h-3 w-3 text-primary" />
+              <span>Images</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <FileText className="h-3 w-3 text-primary" />
+              <span>Documents</span>
+            </div>
+          </div>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
