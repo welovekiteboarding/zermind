@@ -50,6 +50,7 @@ interface DualModeChatProps {
   initialMessages: Message[];
   userId: string;
   chatTitle?: string;
+  enableCollaboration?: boolean; // Optional prop to enable collaboration
 }
 
 // Error handler for collaboration features
@@ -75,6 +76,7 @@ export function DualModeChat({
   initialMessages,
   userId,
   chatTitle,
+  enableCollaboration = false, // Default to false
 }: DualModeChatProps) {
   const { mode } = useChatModeStore();
   const { user } = useAuthUser();
@@ -101,17 +103,21 @@ export function DualModeChat({
     return "User"; // Final fallback
   };
 
-  // Real-time collaboration hook - ALWAYS called at top level (Rules of Hooks)
+  // Real-time collaboration hook - always called but conditionally active
   const collaborationState = useRealtimeCollaboration({
-    chatId,
+    chatId: enableCollaboration ? chatId : "", // Empty chatId disables the hook
     userId,
     userName: getUserDisplayName(),
     onAction: (action) => {
-      console.log("Received collaborative action:", action);
-      // Handle collaborative actions here
+      if (enableCollaboration) {
+        console.log("Received collaborative action:", action);
+        // Handle collaborative actions here
+      }
     },
     onPresenceChange: (users) => {
-      console.log("Collaboration presence changed:", users);
+      if (enableCollaboration) {
+        console.log("Collaboration presence changed:", users);
+      }
     },
   });
 
