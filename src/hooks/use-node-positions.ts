@@ -36,6 +36,30 @@ export function useNodePositions() {
     }
   }, []);
 
+  // Force immediate save of pending positions (useful for component unmount)
+  const savePendingPositions = useCallback(async () => {
+    if (positionUpdateTimeout.current) {
+      clearTimeout(positionUpdateTimeout.current);
+    }
+
+    const updates = Array.from(pendingPositionUpdates.current.entries()).map(
+      ([id, position]: [string, { x: number; y: number }]) => ({
+        id,
+        xPosition: position.x,
+        yPosition: position.y,
+      })
+    );
+
+    if (updates.length > 0) {
+      try {
+        await updateNodePositions(updates);
+        pendingPositionUpdates.current.clear();
+      } catch (error) {
+        console.error("Failed to save pending positions:", error);
+      }
+    }
+  }, [updateNodePositions]);
+
   // Debounced handler for position changes
   const handleNodePositionChange = useCallback(
     (nodeId: string, x: number, y: number) => {
@@ -71,35 +95,16 @@ export function useNodePositions() {
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
+      // Save any pending positions before cleanup
+      savePendingPositions().catch((error) => {
+        console.error("Failed to save pending positions on unmount:", error);
+      });
+
       if (positionUpdateTimeout.current) {
         clearTimeout(positionUpdateTimeout.current);
       }
     };
-  }, []);
-
-  // Force immediate save of pending positions (useful for component unmount)
-  const savePendingPositions = useCallback(async () => {
-    if (positionUpdateTimeout.current) {
-      clearTimeout(positionUpdateTimeout.current);
-    }
-
-    const updates = Array.from(pendingPositionUpdates.current.entries()).map(
-      ([id, position]: [string, { x: number; y: number }]) => ({
-        id,
-        xPosition: position.x,
-        yPosition: position.y,
-      })
-    );
-
-    if (updates.length > 0) {
-      try {
-        await updateNodePositions(updates);
-        pendingPositionUpdates.current.clear();
-      } catch (error) {
-        console.error("Failed to save pending positions:", error);
-      }
-    }
-  }, [updateNodePositions]);
+  }, [savePendingPositions]);
 
   return {
     handleNodePositionChange,
