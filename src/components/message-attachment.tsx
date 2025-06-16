@@ -15,7 +15,7 @@ import {
 import { formatBytes } from "@/components/dropzone";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface MessageAttachmentProps {
   attachments: Attachment[];
@@ -30,80 +30,73 @@ export function MessageAttachment({
 }: MessageAttachmentProps) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [blobUrls, setBlobUrls] = useState<Map<string, string>>(new Map());
+  const blobUrlsRef = useRef<Map<string, string>>(new Map());
 
   // Cleanup blob URLs when component unmounts or attachments change
   useEffect(() => {
     return () => {
-      blobUrls.forEach((blobUrl) => {
+      blobUrlsRef.current.forEach((blobUrl) => {
         URL.revokeObjectURL(blobUrl);
       });
     };
-  }, [blobUrls]);
+  }, []);
 
   // Clean up blob URLs when attachments change
   useEffect(() => {
     const currentAttachmentIds = new Set(attachments.map((att) => att.id));
-    const staleUrls = new Map<string, string>();
+    const staleUrls: string[] = [];
 
-    blobUrls.forEach((blobUrl, attachmentId) => {
+    blobUrlsRef.current.forEach((blobUrl, attachmentId) => {
       if (!currentAttachmentIds.has(attachmentId)) {
         URL.revokeObjectURL(blobUrl);
-        staleUrls.set(attachmentId, blobUrl);
+        staleUrls.push(attachmentId);
       }
     });
 
-    if (staleUrls.size > 0) {
-      setBlobUrls((prev) => {
-        const newMap = new Map(prev);
-        staleUrls.forEach((_, id) => newMap.delete(id));
-        return newMap;
-      });
-    }
-  }, [attachments, blobUrls]);
+    staleUrls.forEach((id) => {
+      blobUrlsRef.current.delete(id);
+    });
+  }, [attachments]);
 
   const handleImageError = (attachmentId: string) => {
     setImageErrors((prev) => new Set(prev).add(attachmentId));
   };
 
-  const createBlobUrl = useCallback(
-    (attachment: Attachment): string => {
-      try {
-        // Check if we already have a blob URL for this attachment
-        const existingBlobUrl = blobUrls.get(attachment.id);
-        if (existingBlobUrl) {
-          return existingBlobUrl;
-        }
-
-        // Convert data URL to blob
-        const [header, data] = attachment.url.split(",");
-        const mimeType = header.match(/:(.*?);/)?.[1] || attachment.mimeType;
-        const byteCharacters = atob(data);
-        const byteNumbers = new Array(byteCharacters.length);
-
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        const blobUrl = URL.createObjectURL(blob);
-
-        // Store the blob URL for cleanup
-        setBlobUrls((prev) => new Map(prev).set(attachment.id, blobUrl));
-
-        return blobUrl;
-      } catch (error) {
-        console.error(
-          "Failed to create blob URL for attachment:",
-          attachment.id,
-          error
-        );
-        return attachment.url; // Fallback to original data URL
+  const createBlobUrl = useCallback((attachment: Attachment): string => {
+    try {
+      // Check if we already have a blob URL for this attachment
+      const existingBlobUrl = blobUrlsRef.current.get(attachment.id);
+      if (existingBlobUrl) {
+        return existingBlobUrl;
       }
-    },
-    [blobUrls]
-  );
+
+      // Convert data URL to blob
+      const [header, data] = attachment.url.split(",");
+      const mimeType = header.match(/:(.*?);/)?.[1] || attachment.mimeType;
+      const byteCharacters = atob(data);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Store the blob URL for cleanup
+      blobUrlsRef.current.set(attachment.id, blobUrl);
+
+      return blobUrl;
+    } catch (error) {
+      console.error(
+        "Failed to create blob URL for attachment:",
+        attachment.id,
+        error
+      );
+      return attachment.url; // Fallback to original data URL
+    }
+  }, []);
 
   const getAttachmentUrl = (attachment: Attachment): string => {
     // Define size threshold for converting to blob URL (1MB in base64 ≈ 1.33MB in bytes)
