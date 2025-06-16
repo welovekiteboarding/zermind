@@ -11,6 +11,7 @@ import { CreateMultiModelBranch } from "@/components/create-multi-model-branch";
 import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { useAuthUser } from "@/hooks/use-auth";
 import { useChatWithMessages } from "@/hooks/use-chats-query";
+import { useNodePositions } from "@/hooks/use-node-positions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Brain, MessageSquare, X } from "lucide-react";
@@ -92,6 +93,9 @@ export function DualModeChat({
   const [createMultiModelFromNodeId, setCreateMultiModelFromNodeId] = useState<
     string | null
   >(null);
+
+  // Use custom hook for node position management
+  const { handleNodePositionChange } = useNodePositions();
 
   // Use live data from React Query instead of static initialMessages
   const { data: liveData } = useChatWithMessages(chatId, userId);
@@ -358,6 +362,7 @@ export function DualModeChat({
             onResumeConversation={handleResumeConversation}
             onCreateBranch={handleCreateBranch}
             onCreateMultiModelBranch={handleCreateMultiModelBranch}
+            onNodePositionChange={handleNodePositionChange}
           />
 
           {/* Real-time Cursors Overlay */}
