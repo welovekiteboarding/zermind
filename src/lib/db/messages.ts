@@ -81,17 +81,20 @@ export async function batchUpdateMessagePositions(
     yPosition: number;
   }>
 ): Promise<void> {
-  const updatePromises = updates.map((update) =>
-    prisma.message.update({
-      where: { id: update.id },
-      data: {
-        xPosition: update.xPosition,
-        yPosition: update.yPosition,
-      },
-    })
-  );
+  // Use a transaction to ensure atomicity of all updates
+  await prisma.$transaction(async (tx) => {
+    const updatePromises = updates.map((update) =>
+      tx.message.update({
+        where: { id: update.id },
+        data: {
+          xPosition: update.xPosition,
+          yPosition: update.yPosition,
+        },
+      })
+    );
 
-  await Promise.all(updatePromises);
+    await Promise.all(updatePromises);
+  });
 }
 
 // Secure batch update message positions with ownership verification
