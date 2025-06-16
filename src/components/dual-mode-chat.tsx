@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { ChatConversation } from "@/components/chat-conversation";
 import { MindMapView } from "@/components/mind-map/mind-map-view";
@@ -11,7 +11,7 @@ import { useChatModeStore } from "@/lib/store/chat-mode-store";
 import { useAuthUser } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Brain, MessageSquare, ArrowLeft } from "lucide-react";
+import { Brain, MessageSquare, X } from "lucide-react";
 import { CollaborationButton } from "@/components/collaboration/collaboration-button";
 import {
   RealtimeCursors,
@@ -175,6 +175,34 @@ export function DualModeChat({
     setCreateMultiModelFromNodeId(null);
   }, []);
 
+  // Add keyboard event handler for Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        const hasActiveAction =
+          resumeFromNodeId ||
+          createBranchFromNodeId ||
+          createMultiModelFromNodeId;
+        if (hasActiveAction) {
+          clearAllActions();
+        }
+      }
+    };
+
+    // Add event listener
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    resumeFromNodeId,
+    createBranchFromNodeId,
+    createMultiModelFromNodeId,
+    clearAllActions,
+  ]);
+
   // Convert traditional messages to mind map format
   const mindMapMessages = initialMessages.map((msg, index) => ({
     ...msg,
@@ -185,6 +213,14 @@ export function DualModeChat({
   // Check if any action is active
   const hasActiveAction =
     resumeFromNodeId || createBranchFromNodeId || createMultiModelFromNodeId;
+
+  // Get active action name for better UX
+  const getActiveActionName = () => {
+    if (resumeFromNodeId) return "Resume Conversation";
+    if (createBranchFromNodeId) return "Create Branch";
+    if (createMultiModelFromNodeId) return "Create Multi-Model Branch";
+    return "";
+  };
 
   if (mode === "mind") {
     return (
@@ -226,17 +262,19 @@ export function DualModeChat({
                 />
               </ErrorBoundary>
 
-              {/* Clear Actions Button */}
+              {/* Enhanced Clear Actions Button */}
               {hasActiveAction && (
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="destructive"
                   onClick={clearAllActions}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white"
                 >
-                  <ArrowLeft className="h-3 w-3" />
-                  <span className="hidden sm:inline">Clear Action</span>
-                  <span className="sm:hidden">Clear</span>
+                  <X className="h-3 w-3" />
+                  <span className="hidden sm:inline">
+                    Close {getActiveActionName()}
+                  </span>
+                  <span className="sm:hidden">Close</span>
                 </Button>
               )}
             </div>
@@ -277,32 +315,71 @@ export function DualModeChat({
 
         {/* Resume Conversation Panel */}
         {resumeFromNodeId && (
-          <ResumeMessageInput
-            chatId={chatId}
-            parentNodeId={resumeFromNodeId}
-            onClose={() => setResumeFromNodeId(null)}
-            onMessageSent={handleResumeMessageSent}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setResumeFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <ResumeMessageInput
+              chatId={chatId}
+              parentNodeId={resumeFromNodeId}
+              onClose={() => setResumeFromNodeId(null)}
+              onMessageSent={handleResumeMessageSent}
+            />
+          </div>
         )}
 
         {/* Create Branch Panel */}
         {createBranchFromNodeId && (
-          <CreateBranchInput
-            chatId={chatId}
-            parentNodeId={createBranchFromNodeId}
-            onClose={() => setCreateBranchFromNodeId(null)}
-            onBranchCreated={handleBranchCreated}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreateBranchFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <CreateBranchInput
+              chatId={chatId}
+              parentNodeId={createBranchFromNodeId}
+              onClose={() => setCreateBranchFromNodeId(null)}
+              onBranchCreated={handleBranchCreated}
+            />
+          </div>
         )}
 
         {/* Create Multi-Model Branch Panel */}
         {createMultiModelFromNodeId && (
-          <CreateMultiModelBranch
-            chatId={chatId}
-            parentNodeId={createMultiModelFromNodeId}
-            onClose={() => setCreateMultiModelFromNodeId(null)}
-            onBranchCreated={handleMultiModelBranchCreated}
-          />
+          <div className="relative">
+            {/* Panel Header with Close Button */}
+            <div className="absolute top-2 right-2 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setCreateMultiModelFromNodeId(null)}
+                className="h-6 w-6 p-0 rounded-full bg-background/80 hover:bg-background border shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            <CreateMultiModelBranch
+              chatId={chatId}
+              parentNodeId={createMultiModelFromNodeId}
+              onClose={() => setCreateMultiModelFromNodeId(null)}
+              onBranchCreated={handleMultiModelBranchCreated}
+            />
+          </div>
         )}
       </div>
     );
