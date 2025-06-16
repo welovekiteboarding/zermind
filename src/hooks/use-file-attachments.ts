@@ -1,6 +1,4 @@
 import { useState, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
 import { type Attachment } from "@/lib/schemas/chat";
 import { nanoid } from "nanoid";
 import {
@@ -9,8 +7,6 @@ import {
   getModelCapabilities,
   modelSupportsAttachments,
 } from "@/lib/utils/model-utils";
-
-const supabase = createClient();
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -30,58 +26,7 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
   const modelCapabilities = getModelCapabilities(model);
   const supportsAttachments = modelSupportsAttachments(model);
 
-  // Upload mutation using React Query
-  const uploadMutation = useMutation({
-    mutationFn: async (files: FileWithPreview[]): Promise<Attachment[]> => {
-      if (!files.length) return [];
 
-      const uploadPromises = files.map(async (file) => {
-        const fileName = `${nanoid()}-${file.name}`;
-        const filePath = `uploads/${new Date().getFullYear()}/${
-          new Date().getMonth() + 1
-        }/${fileName}`;
-
-        // Upload to private bucket
-        const { error } = await supabase.storage
-          .from("chat-attachments")
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (error) {
-          throw new Error(`Failed to upload ${file.name}: ${error.message}`);
-        }
-
-        // Generate signed URL for private access
-        const { data: signedUrlData, error: signedUrlError } =
-          await supabase.storage
-            .from("chat-attachments")
-            .createSignedUrl(filePath, 3600); // 1 hour expiry
-
-        if (signedUrlError) {
-          // Rollback: Delete the uploaded file to prevent orphaned files
-          await supabase.storage.from("chat-attachments").remove([filePath]);
-
-          throw new Error(
-            `Failed to generate signed URL for ${file.name}: ${signedUrlError.message}`
-          );
-        }
-
-        return {
-          id: file.id,
-          name: file.name,
-          mimeType: file.type,
-          size: file.size,
-          url: signedUrlData.signedUrl,
-          filePath: filePath, // Store path for future signed URL generation
-          type: file.type.startsWith("image/") ? "image" : "document",
-        } as Attachment;
-      });
-
-      return Promise.all(uploadPromises);
-    },
-  });
 
   const validateFile = useCallback(
     (file: File): string | null => {
@@ -155,19 +100,7 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
     setPendingFiles([]);
   }, [pendingFiles]);
 
-  // Upload files and return attachments
-  const uploadFiles = useCallback(async (): Promise<Attachment[]> => {
-    if (pendingFiles.length === 0) return [];
 
-    try {
-      const attachments = await uploadMutation.mutateAsync(pendingFiles);
-      clearFiles(); // Clear pending files after successful upload
-      return attachments;
-    } catch (error) {
-      console.error("Failed to upload files:", error);
-      throw error;
-    }
-  }, [pendingFiles, uploadMutation, clearFiles]);
 
   // Helper function to compress images
   const compressImage = useCallback(
@@ -318,12 +251,11 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
   return {
     pendingFiles,
     isDragOver,
-    isUploading: uploadMutation.isPending,
-    uploadError: uploadMutation.error,
+    isUploading: false, // No longer uploading since we process directly
+    uploadError: null, // No upload errors since we don't upload
     addFiles,
     removeFile,
     clearFiles,
-    uploadFiles,
     processFilesDirectly,
     supportsAttachments,
     modelCapabilities,

@@ -6,8 +6,7 @@ export const AttachmentSchema = z.object({
   name: z.string(),
   mimeType: z.string(),
   size: z.number(),
-  url: z.string(), // Supabase signed URL for private access
-  filePath: z.string().optional(), // Storage path for regenerating signed URLs
+  url: z.string(), // Data URL for direct processing (no server storage)
   type: z.enum(["image", "document"]),
 });
 

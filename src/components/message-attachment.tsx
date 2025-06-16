@@ -15,8 +15,7 @@ import {
 import { formatBytes } from "@/components/dropzone";
 import { cn } from "@/lib/utils";
 import NextImage from "next/image";
-import { useState, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 
 interface MessageAttachmentProps {
   attachments: Attachment[];
@@ -31,76 +30,17 @@ export function MessageAttachment({
 }: MessageAttachmentProps) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [refreshedUrls, setRefreshedUrls] = useState<Record<string, string>>(
-    {}
-  );
-  // Store pending promises to prevent duplicate requests
-  const pendingRefreshes = useRef<Record<string, Promise<string>>>({});
-
-  // Create Supabase client once and reuse it
-  const supabaseRef = useRef(createClient());
 
   if (!attachments || attachments.length === 0) {
     return null;
   }
 
-  // Function to refresh signed URL when it expires
-  const refreshSignedUrl = async (attachment: Attachment): Promise<string> => {
-    if (!attachment.filePath) {
-      console.warn("No filePath available for attachment:", attachment.name);
-      return attachment.url;
-    }
-
-    // Check if there's already a pending request for this filePath
-    if (attachment.filePath in pendingRefreshes.current) {
-      console.log("Reusing pending refresh request for:", attachment.filePath);
-      return pendingRefreshes.current[attachment.filePath];
-    }
-
-    // Create a new promise for this refresh request
-    const refreshPromise = (async () => {
-      try {
-        const { data, error } = await supabaseRef.current.storage
-          .from("chat-attachments")
-          .createSignedUrl(attachment.filePath!, 3600); // 1 hour expiry
-
-        if (error) {
-          console.error("Error refreshing signed URL:", error);
-          return attachment.url;
-        }
-
-        setRefreshedUrls((prev) => ({
-          ...prev,
-          [attachment.id]: data.signedUrl,
-        }));
-        return data.signedUrl;
-      } catch (error) {
-        console.error("Failed to refresh signed URL:", error);
-        return attachment.url;
-      } finally {
-        // Clean up the pending promise when done
-        delete pendingRefreshes.current[attachment.filePath!];
-      }
-    })();
-
-    // Store the promise to prevent duplicate requests
-    pendingRefreshes.current[attachment.filePath!] = refreshPromise;
-
-    return refreshPromise;
-  };
-
-  const handleImageError = async (attachmentId: string) => {
+  const handleImageError = (attachmentId: string) => {
     setImageErrors((prev) => new Set(prev).add(attachmentId));
-
-    // Try to refresh the signed URL if it failed
-    const attachment = attachments.find((att) => att.id === attachmentId);
-    if (attachment && attachment.filePath) {
-      await refreshSignedUrl(attachment);
-    }
   };
 
   const getAttachmentUrl = (attachment: Attachment): string => {
-    return refreshedUrls[attachment.id] || attachment.url;
+    return attachment.url; // Direct data URL, no expiration
   };
 
   const getFileTypeIcon = (mimeType: string) => {

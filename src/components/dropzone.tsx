@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { type UseSupabaseUploadReturn } from "@/hooks/use-supabase-upload";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, File, Loader2, Upload, X } from "lucide-react";
 import {
@@ -30,17 +29,34 @@ export const formatBytes = (
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
-type DropzoneContextType = Omit<
-  UseSupabaseUploadReturn,
-  "getRootProps" | "getInputProps"
->;
+interface FileWithErrors extends File {
+  preview?: string;
+  errors: Array<{ code: string; message: string }>;
+}
+
+type DropzoneContextType = {
+  files: FileWithErrors[];
+  setFiles: (files: FileWithErrors[]) => void;
+  onUpload: () => Promise<void>;
+  loading: boolean;
+  successes: string[];
+  errors: Array<{ name: string; message: string }>;
+  maxFileSize: number;
+  maxFiles: number;
+  isSuccess: boolean;
+  isDragActive: boolean;
+  isDragReject: boolean;
+  inputRef: React.RefObject<HTMLInputElement>;
+};
 
 const DropzoneContext = createContext<DropzoneContextType | undefined>(
   undefined
 );
 
-type DropzoneProps = UseSupabaseUploadReturn & {
+type DropzoneProps = DropzoneContextType & {
   className?: string;
+  getRootProps: (props?: object) => object;
+  getInputProps: () => object;
 };
 
 const Dropzone = ({
