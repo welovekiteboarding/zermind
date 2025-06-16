@@ -43,9 +43,9 @@ export function MessageAttachment({
 
   // Clean up blob URLs when attachments change
   useEffect(() => {
-    const currentAttachmentIds = new Set(attachments.map(att => att.id));
+    const currentAttachmentIds = new Set(attachments.map((att) => att.id));
     const staleUrls = new Map<string, string>();
-    
+
     blobUrls.forEach((blobUrl, attachmentId) => {
       if (!currentAttachmentIds.has(attachmentId)) {
         URL.revokeObjectURL(blobUrl);
@@ -54,7 +54,7 @@ export function MessageAttachment({
     });
 
     if (staleUrls.size > 0) {
-      setBlobUrls(prev => {
+      setBlobUrls((prev) => {
         const newMap = new Map(prev);
         staleUrls.forEach((_, id) => newMap.delete(id));
         return newMap;
@@ -66,53 +66,60 @@ export function MessageAttachment({
     setImageErrors((prev) => new Set(prev).add(attachmentId));
   };
 
-  const createBlobUrl = useCallback((attachment: Attachment): string => {
-    try {
-      // Check if we already have a blob URL for this attachment
-      const existingBlobUrl = blobUrls.get(attachment.id);
-      if (existingBlobUrl) {
-        return existingBlobUrl;
-      }
+  const createBlobUrl = useCallback(
+    (attachment: Attachment): string => {
+      try {
+        // Check if we already have a blob URL for this attachment
+        const existingBlobUrl = blobUrls.get(attachment.id);
+        if (existingBlobUrl) {
+          return existingBlobUrl;
+        }
 
-      // Convert data URL to blob
-      const [header, data] = attachment.url.split(',');
-      const mimeType = header.match(/:(.*?);/)?.[1] || attachment.mimeType;
-      const byteCharacters = atob(data);
-      const byteNumbers = new Array(byteCharacters.length);
-      
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: mimeType });
-      const blobUrl = URL.createObjectURL(blob);
+        // Convert data URL to blob
+        const [header, data] = attachment.url.split(",");
+        const mimeType = header.match(/:(.*?);/)?.[1] || attachment.mimeType;
+        const byteCharacters = atob(data);
+        const byteNumbers = new Array(byteCharacters.length);
 
-      // Store the blob URL for cleanup
-      setBlobUrls(prev => new Map(prev).set(attachment.id, blobUrl));
-      
-      return blobUrl;
-    } catch (error) {
-      console.error('Failed to create blob URL for attachment:', attachment.id, error);
-      return attachment.url; // Fallback to original data URL
-    }
-  }, [blobUrls]);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Store the blob URL for cleanup
+        setBlobUrls((prev) => new Map(prev).set(attachment.id, blobUrl));
+
+        return blobUrl;
+      } catch (error) {
+        console.error(
+          "Failed to create blob URL for attachment:",
+          attachment.id,
+          error
+        );
+        return attachment.url; // Fallback to original data URL
+      }
+    },
+    [blobUrls]
+  );
 
   const getAttachmentUrl = (attachment: Attachment): string => {
     // Define size threshold for converting to blob URL (1MB in base64 ≈ 1.33MB in bytes)
     const LARGE_ATTACHMENT_THRESHOLD = 1024 * 1024; // 1MB in base64 characters
-    
+
     try {
       // For large attachments, use blob URLs to avoid browser performance issues
       // Data URLs can cause problems with window.open() and Next.js Image components
       if (attachment.url.length > LARGE_ATTACHMENT_THRESHOLD) {
         return createBlobUrl(attachment);
       }
-      
+
       // For smaller attachments, use the original data URL
       return attachment.url;
     } catch (error) {
-      console.error('Error processing attachment URL:', error);
+      console.error("Error processing attachment URL:", error);
       return attachment.url; // Fallback to original data URL
     }
   };
