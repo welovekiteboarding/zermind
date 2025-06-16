@@ -9,13 +9,26 @@ import { logModelUsage } from "@/lib/usage-logger";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveApiKey } from "@/lib/db/api-keys";
 import { type Provider } from "@/lib/schemas/api-keys";
+import { AttachmentSchema } from "@/lib/schemas/chat";
 
-// Request schema
+// Attachment schema for AI SDK experimental_attachments
+const AISDKAttachmentSchema = z.object({
+  name: z.string().optional(),
+  contentType: z.string().optional(),
+  url: z.string(),
+});
+
+// Request schema with optional attachments
 const ChatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(["user", "assistant", "system"]),
       content: z.string(),
+      attachments: z.array(AttachmentSchema).optional().default([]),
+      experimental_attachments: z
+        .array(AISDKAttachmentSchema)
+        .optional()
+        .default([]),
     })
   ),
   model: z.string().optional().default("openai/gpt-4o-mini"),
@@ -135,6 +148,14 @@ export async function POST(req: NextRequest) {
     const { messages, model, maxTokens, temperature } =
       ChatRequestSchema.parse(body);
 
+    console.log("=== CHAT API REQUEST ===");
+    console.log("Model:", model);
+    console.log("Messages count:", messages.length);
+    console.log(
+      "Messages with attachments:",
+      messages.filter((m) => m.attachments && m.attachments.length > 0).length
+    );
+
     // Get user for authentication and API key lookup
     const supabase = await createClient();
     const {
@@ -149,17 +170,50 @@ export async function POST(req: NextRequest) {
       usingUserKey,
     } = await createAIProvider(model, userId);
 
+    console.log("Provider setup:", {
+      originalModel: model,
+      providerModel,
+      usingUserKey,
+      provider: usingUserKey ? getProviderFromModel(model) : "openrouter",
+    });
+
     // Log model usage (no user data is logged, only model and user ID)
     await logModelUsage(model, userId);
 
+    console.log("=== FINAL MESSAGE FORMAT ===");
+    console.log("Messages count:", messages.length);
+    messages.forEach((msg, index) => {
+      console.log(`Message ${index}:`, {
+        role: msg.role,
+        contentType: typeof msg.content,
+        content:
+          msg.content.substring(0, 100) +
+          (msg.content.length > 100 ? "..." : ""),
+        hasAttachments:
+          (msg.attachments && msg.attachments.length > 0) ||
+          (msg.experimental_attachments &&
+            msg.experimental_attachments.length > 0),
+        attachmentsCount:
+          (msg.attachments?.length || 0) +
+          (msg.experimental_attachments?.length || 0),
+      });
+    });
+
     // Stream response using Vercel AI SDK
+    // The AI SDK will automatically handle experimental_attachments from the frontend
     const result = streamText({
       model: provider.chat(providerModel),
-      messages,
+      messages: messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        ...(msg.experimental_attachments && {
+          experimental_attachments: msg.experimental_attachments,
+        }),
+      })),
       maxTokens,
       temperature,
-      onError: (error) => {
-        console.error("Streaming error:", error);
+      onError: (event) => {
+        console.error("Streaming error:", event.error);
       },
     });
 

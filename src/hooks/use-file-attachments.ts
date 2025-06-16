@@ -61,10 +61,8 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
 
         if (signedUrlError) {
           // Rollback: Delete the uploaded file to prevent orphaned files
-          await supabase.storage
-            .from("chat-attachments")
-            .remove([filePath]);
-          
+          await supabase.storage.from("chat-attachments").remove([filePath]);
+
           throw new Error(
             `Failed to generate signed URL for ${file.name}: ${signedUrlError.message}`
           );
@@ -171,6 +169,109 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
     }
   }, [pendingFiles, uploadMutation, clearFiles]);
 
+  // Helper function to compress images
+  const compressImage = useCallback(
+    async (dataUrl: string, maxSizeKB: number = 200): Promise<string> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d")!;
+
+          // Calculate new dimensions to reduce file size
+          let { width, height } = img;
+          const aspectRatio = width / height;
+
+          // Reduce dimensions if image is very large
+          const maxDimension = 800; // Smaller max dimension to reduce tokens
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              width = maxDimension;
+              height = width / aspectRatio;
+            } else {
+              height = maxDimension;
+              width = height * aspectRatio;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Try different quality levels to stay under size limit
+          let quality = 0.7; // Start with lower quality
+          let compressedData = canvas.toDataURL("image/jpeg", quality);
+
+          // Reduce quality until under size limit
+          while (
+            compressedData.length > maxSizeKB * 1024 * 1.37 &&
+            quality > 0.1
+          ) {
+            // 1.37 factor for base64 overhead
+            quality -= 0.1;
+            compressedData = canvas.toDataURL("image/jpeg", quality);
+          }
+
+          console.log(
+            `Image compressed: ${dataUrl.length} -> ${compressedData.length} bytes (quality: ${quality})`
+          );
+          resolve(compressedData);
+        };
+        img.src = dataUrl;
+      });
+    },
+    []
+  );
+
+  // Process files directly without uploading to storage (for privacy)
+  const processFilesDirectly = useCallback(async (): Promise<Attachment[]> => {
+    if (pendingFiles.length === 0) return [];
+
+    try {
+      const processedAttachments: Attachment[] = [];
+
+      for (const file of pendingFiles) {
+        // Convert file to base64 for direct processing
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Remove the data URL prefix to get just the base64 data
+            const base64 = result.split(",")[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Create attachment object with base64 data URL
+        let dataUrl = `data:${file.type};base64,${base64Data}`;
+
+        // Compress images to avoid token limits
+        if (file.type.startsWith("image/")) {
+          dataUrl = await compressImage(dataUrl, 200); // 200KB limit
+        }
+
+        processedAttachments.push({
+          id: file.id,
+          name: file.name,
+          mimeType: file.type,
+          size: file.size,
+          url: dataUrl, // Use data URL instead of storage URL
+          type: file.type.startsWith("image/") ? "image" : "document",
+        });
+      }
+
+      clearFiles(); // Clear pending files after processing
+      return processedAttachments;
+    } catch (error) {
+      console.error("Failed to process files:", error);
+      throw error;
+    }
+  }, [pendingFiles, clearFiles, compressImage]);
+
   // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -223,6 +324,7 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
     removeFile,
     clearFiles,
     uploadFiles,
+    processFilesDirectly,
     supportsAttachments,
     modelCapabilities,
     allowedMimeTypes,

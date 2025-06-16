@@ -79,7 +79,7 @@ export interface ModelCapabilities {
  */
 export function getModelCapabilities(model: string): ModelCapabilities {
   const provider = getProviderFromModel(model);
-  
+
   // Default capabilities - no file support
   const defaultCapabilities: ModelCapabilities = {
     supportsImages: false,
@@ -94,7 +94,12 @@ export function getModelCapabilities(model: string): ModelCapabilities {
           supportsImages: true,
           supportsDocuments: false, // OpenAI doesn't support document upload via vision API
           maxImageSize: 20, // 20MB limit
-          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
         };
       }
       return defaultCapabilities;
@@ -106,7 +111,12 @@ export function getModelCapabilities(model: string): ModelCapabilities {
           supportsImages: true,
           supportsDocuments: false, // Claude doesn't support document upload directly
           maxImageSize: 5, // 5MB limit for Claude
-          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
         };
       }
       return defaultCapabilities;
@@ -119,13 +129,106 @@ export function getModelCapabilities(model: string): ModelCapabilities {
           supportsDocuments: true, // Gemini can handle PDFs
           maxImageSize: 20,
           maxDocumentSize: 10,
-          supportedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
           supportedDocumentTypes: ["application/pdf"],
         };
       }
       return defaultCapabilities;
 
+    case "openrouter":
     default:
+      // OpenRouter supports many models with file capabilities
+      // Check for specific model patterns that support vision/files
+      const lowerModel = model.toLowerCase();
+
+      // GPT-4o models via OpenRouter
+      if (
+        lowerModel.includes("gpt-4o") ||
+        lowerModel.includes("openai/gpt-4o")
+      ) {
+        return {
+          supportsImages: true,
+          supportsDocuments: true, // OpenRouter adds PDF support
+          maxImageSize: 20,
+          maxDocumentSize: 10,
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
+          supportedDocumentTypes: ["application/pdf"],
+        };
+      }
+
+      // Claude 3+ models via OpenRouter
+      if (
+        lowerModel.includes("claude-3") ||
+        lowerModel.includes("anthropic/claude-3")
+      ) {
+        return {
+          supportsImages: true,
+          supportsDocuments: true, // OpenRouter adds PDF support
+          maxImageSize: 5,
+          maxDocumentSize: 10,
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
+          supportedDocumentTypes: ["application/pdf"],
+        };
+      }
+
+      // Gemini models via OpenRouter
+      if (
+        lowerModel.includes("gemini") ||
+        lowerModel.includes("google/gemini")
+      ) {
+        return {
+          supportsImages: true,
+          supportsDocuments: true,
+          maxImageSize: 20,
+          maxDocumentSize: 10,
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
+          supportedDocumentTypes: ["application/pdf"],
+        };
+      }
+
+      // Other popular vision models via OpenRouter
+      if (
+        lowerModel.includes("llava") ||
+        lowerModel.includes("llama-3.2-90b-vision") ||
+        lowerModel.includes("llama-3.2-11b-vision") ||
+        lowerModel.includes("qwen/qwen-2-vl") ||
+        lowerModel.includes("mistral/pixtral")
+      ) {
+        return {
+          supportsImages: true,
+          supportsDocuments: true, // OpenRouter provides document parsing
+          maxImageSize: 10,
+          maxDocumentSize: 10,
+          supportedImageTypes: [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+          ],
+          supportedDocumentTypes: ["application/pdf"],
+        };
+      }
+
       return defaultCapabilities;
   }
 }
@@ -144,15 +247,15 @@ export function modelSupportsAttachments(model: string): boolean {
 export function getAllowedMimeTypes(model: string): string[] {
   const capabilities = getModelCapabilities(model);
   const allowedTypes: string[] = [];
-  
+
   if (capabilities.supportsImages && capabilities.supportedImageTypes) {
     allowedTypes.push(...capabilities.supportedImageTypes);
   }
-  
+
   if (capabilities.supportsDocuments && capabilities.supportedDocumentTypes) {
     allowedTypes.push(...capabilities.supportedDocumentTypes);
   }
-  
+
   return allowedTypes;
 }
 
@@ -161,14 +264,14 @@ export function getAllowedMimeTypes(model: string): string[] {
  */
 export function getMaxFileSize(model: string, mimeType: string): number {
   const capabilities = getModelCapabilities(model);
-  
+
   if (mimeType.startsWith("image/") && capabilities.maxImageSize) {
     return capabilities.maxImageSize * 1024 * 1024; // Convert MB to bytes
   }
-  
+
   if (mimeType === "application/pdf" && capabilities.maxDocumentSize) {
     return capabilities.maxDocumentSize * 1024 * 1024; // Convert MB to bytes
   }
-  
+
   return 5 * 1024 * 1024; // Default 5MB limit
 }

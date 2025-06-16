@@ -17,9 +17,9 @@ interface CollaborationPageProps {
   }>;
 }
 
-export default async function CollaborationPage({ 
-  params, 
-  searchParams 
+export default async function CollaborationPage({
+  params,
+  searchParams,
 }: CollaborationPageProps) {
   const supabase = await createClient();
   const { chatId } = await params;
@@ -45,7 +45,7 @@ export default async function CollaborationPage({
 
     // Check if there's an active collaboration session
     const collaborationSession = await getChatCollaborationSession(chatId);
-    
+
     // Determine user's access level
     let userRole: "owner" | "collaborator" | "viewer" = "viewer";
     let hasAccess = false;
@@ -54,17 +54,17 @@ export default async function CollaborationPage({
     if (chat.user_id === userData.user.id) {
       userRole = "owner";
       hasAccess = true;
-    } 
+    }
     // Check if user is part of active collaboration session
     else if (collaborationSession) {
       const participant = collaborationSession.participants.find(
         (p) => p.userId === userData.user.id
       );
-      
+
       if (participant) {
         userRole = participant.role as "owner" | "collaborator" | "viewer";
         hasAccess = true;
-      } 
+      }
       // If collaboration is active and user has collaboration link, auto-join as collaborator
       else if (collaborate === "true" && chat.is_collaborative) {
         try {
@@ -76,7 +76,7 @@ export default async function CollaborationPage({
               role: "collaborator",
             },
           });
-          
+
           userRole = "collaborator";
           hasAccess = true;
         } catch (error) {
@@ -100,7 +100,7 @@ export default async function CollaborationPage({
             },
           },
         });
-        
+
         userRole = "collaborator";
         hasAccess = true;
       } catch (error) {
@@ -141,7 +141,7 @@ export default async function CollaborationPage({
       try {
         if (!attachments) return [];
         if (Array.isArray(attachments)) return attachments as Attachment[];
-        if (typeof attachments === 'string') {
+        if (typeof attachments === "string") {
           const parsed = JSON.parse(attachments);
           return Array.isArray(parsed) ? parsed : [];
         }
@@ -193,6 +193,7 @@ export default async function CollaborationPage({
             }))}
             userId={userData.user.id}
             chatTitle={chatData.title || undefined}
+            enableCollaboration={true}
           />
         </main>
       </div>
@@ -201,4 +202,4 @@ export default async function CollaborationPage({
     console.error("Collaboration page error:", error);
     redirect("/protected?error=collaboration-error");
   }
-} 
+}
