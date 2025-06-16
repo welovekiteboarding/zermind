@@ -124,9 +124,9 @@ function BranchingForm({
         {/* Context Preview */}
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
-            <FormLabel className="text-xs text-muted-foreground">
+            <label className="text-xs text-muted-foreground">
               Branching from:
-            </FormLabel>
+            </label>
             <Badge variant="outline" className="text-xs w-fit">
               {context.length} message{context.length !== 1 ? "s" : ""} in
               context
@@ -164,9 +164,9 @@ function BranchingForm({
         {/* Branch Messages */}
         {messages.length > context.length && (
           <div className="space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
-            <FormLabel className="text-xs text-muted-foreground">
+            <label className="text-xs text-muted-foreground">
               New branch messages:
-            </FormLabel>
+            </label>
             {messages.slice(context.length).map((message) => (
               <Card
                 key={message.id}
