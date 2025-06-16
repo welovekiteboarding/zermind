@@ -437,14 +437,14 @@ export function ChatInterface({ user }: ChatInterfaceProps) {
       {/* Footer */}
       <div className="text-center text-xs sm:text-sm text-muted-foreground space-y-2 sm:space-y-3">
         <p>
-          Open source • Privacy-focused • Built for{" "}
+          Open source • Privacy-focused • Built by{" "}
           <Link
-            href="https://cloneathon.t3.chat"
+            href="https://x.com/NickelanddimeO"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary font-bold hover:text-primary/80 transition-colors hover:underline"
           >
-            Cloneathon 2025
+            NickelanddimeO
           </Link>
         </p>
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
