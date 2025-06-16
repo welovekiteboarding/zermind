@@ -239,9 +239,9 @@ function BranchingForm({
                   disabled={isLoading}
                 />
               </div>
-              <Button 
-                size="sm" 
-                variant="outline" 
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={onClose}
                 className="min-h-[36px] sm:min-h-auto w-full sm:w-auto"
               >
@@ -346,9 +346,9 @@ export function CreateBranchInput({
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">{contextError.message}</span>
             </div>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               onClick={onClose}
               className="min-h-[36px] sm:min-h-auto"
             >
