@@ -34,8 +34,9 @@ export function MessageAttachment({
 
   // Cleanup blob URLs when component unmounts or attachments change
   useEffect(() => {
+    const currentBlobUrls = blobUrlsRef.current;
     return () => {
-      blobUrlsRef.current.forEach((blobUrl) => {
+      currentBlobUrls.forEach((blobUrl) => {
         URL.revokeObjectURL(blobUrl);
       });
     };
