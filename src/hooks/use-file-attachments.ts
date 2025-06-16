@@ -26,8 +26,6 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
   const modelCapabilities = getModelCapabilities(model);
   const supportsAttachments = modelSupportsAttachments(model);
 
-
-
   const validateFile = useCallback(
     (file: File): string | null => {
       if (!supportsAttachments) {
@@ -99,8 +97,6 @@ export function useFileAttachments({ model }: UseFileAttachmentsOptions) {
     });
     setPendingFiles([]);
   }, [pendingFiles]);
-
-
 
   // Helper function to compress images
   const compressImage = useCallback(
