@@ -15,6 +15,12 @@ declare global {
   }
 }
 
+// In local/development environments Google Analytics isn't loaded, so ensure `window.gtag` exists to avoid runtime errors.
+if (typeof window !== "undefined" && typeof window.gtag !== "function") {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  window.gtag = () => {};
+}
+
 const CookieBanner: React.FC = () => {
   const [showBanner, setShowBanner] = useState(false);
 
