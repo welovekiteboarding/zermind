@@ -1,5 +1,6 @@
 /* eslint-env browser, node */
 /* eslint-disable no-unused-vars */
+/* global console, module */
 // This file was created for Codacy testing and has now been fixed
 
 // Using previously unused variable
